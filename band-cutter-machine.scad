@@ -2,43 +2,36 @@
 
 $fn=96;
 e=0.02;
-
 PI=3.1415926536;
 
-infeed_idler_dia=20;
+hole_count=18;   // This determines the length
+button_hole_distance=25.4 / 1.5;  // our band
+
+band_separation=0.75;               // How far apart we have the bands
+band_thick=19.7 + band_separation;  // Actual width + separation.
 
 stack=2;
+side_wall_clearance=6.95;
+axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
+
 bands_per_wheel=0.5;
 cut_slot_deep=10;
-axle_dia=6.5;   // 1/4" rod + extra
-axle_display=axle_dia - 0.5;
-mount_hole_dia=4.5;
-mount_hole_pos=5;  // from outside
-spoke_angle=60;
-do_spokes=true;
-wheel_idler_axle=5;
 
+axle_display=axle_dia - 0.5;
+spoke_angle=60;
+
+// Main wheel parameters
 wheel_wall=1;
 spoke_thick=1;
 
-band_separation=0.75;
-band_thick=19.7 + band_separation;
-//band_center_thick=12;
-band_center_thick=band_thick;
-
-
-side_wall_clearance=6.95;
-
-hole_count=18;   // This determines the length
 hole_angle=360/(bands_per_wheel*hole_count);
-
-//button_hole_distance=286/17;  // measured mm / hole count.
-//button_hole_distance=594/35;  // measured mm / hole count.
-button_hole_distance=25.4 / 1.5;  // probably actual value.
 circ=bands_per_wheel * hole_count * button_hole_distance;
 radius=circ / (2*PI);
-out_feed_offset=0.5;
 
+infeed_idler_dia=20;
+outfeed_offset=0.5;
+
+// Blades engaging with the button-holes
 blade_h=3.5;
 blade_w=0.9;
 blade_l=5;
@@ -48,11 +41,11 @@ mount_holes = [[-30, -radius-3], [19, -radius-3],
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance);
 
-module mount_place(dia=mount_hole_dia) {
+module mount_place(dia) {
   translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
 }
 
-module mount_place_punch(dia=mount_hole_dia) {
+module mount_place_punch(dia) {
   translate([0, 0, -(band_thick+e)/2]) cylinder(r=dia/2, h=band_thick+2*e);
 }
 
@@ -80,9 +73,9 @@ module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
 }
 
 module basic_wheel() {
-  translate([0, 0, -band_center_thick/2]) difference() {
-    cylinder(r=radius, h=band_center_thick);
-    translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_center_thick+2*e);
+  translate([0, 0, -band_thick/2]) difference() {
+    cylinder(r=radius, h=band_thick);
+    translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_thick+2*e);
   }
 
   intersection() {
@@ -102,7 +95,7 @@ module basic_wheel() {
     union() {
       for (a=[0:spoke_angle:360]) {
         rotate([0, 0, a]) {
-          if (do_spokes) translate([radius/2, 0, 0]) cube([radius, spoke_thick, band_center_thick], center=true);
+          translate([radius/2, 0, 0]) cube([radius, spoke_thick, band_thick], center=true);
         }
       }
 
@@ -113,7 +106,7 @@ module basic_wheel() {
     translate([0, 0, -band_thick/2]) cylinder(r=radius, h=band_thick);
   }
 
-  if (do_spokes) mount_place(dia=axle_dia);  // axle in center
+  mount_place(dia=axle_dia);  // axle in center
 }
 
 module wheel_assembly() {
@@ -284,14 +277,14 @@ module support_enforder(s=5) {
 }
 
 module out_feed_material() {
-  translate([-band_thick/2, out_feed_offset, radius+out_feed_offset]) {
+  translate([-band_thick/2, outfeed_offset, radius+outfeed_offset]) {
     translate([0, 2, -4]) cube([band_thick, 15, 4]);
   }
 }
 
 module out_feed_punch() {
-  rotate([0, 90, 0]) translate([0, 0, -band_thick/2-e]) cylinder(r=radius+out_feed_offset, h=band_thick+2*e);
-  rotate([0, 90, 0]) translate([0, 0, -2-e]) cylinder(r=radius+out_feed_offset+blade_h+2, h=4+2*e);
+  rotate([0, 90, 0]) translate([0, 0, -band_thick/2-e]) cylinder(r=radius+outfeed_offset, h=band_thick+2*e);
+  rotate([0, 90, 0]) translate([0, 0, -2-e]) cylinder(r=radius+outfeed_offset+blade_h+2, h=4+2*e);
 }
 
 module out_feed_stack_material(s=3, extra=0) {
@@ -306,12 +299,12 @@ module out_feed_stack_material(s=3, extra=0) {
 
   // Rounded slot mount
   translate([-d*s+d/2-sw, 0, 0]) hull() {
-    translate([0, 19, radius-4/2+out_feed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
-    translate([0, 19+slot_w, radius-4/2+out_feed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
+    translate([0, 19, radius-4/2+outfeed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
+    translate([0, 19+slot_w, radius-4/2+outfeed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
   }
 
   // bar, also shoulder.
-  translate([-d*s/2+d/2, 19+slot_w/2, radius-4/2+out_feed_offset]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
+  translate([-d*s/2+d/2, 19+slot_w/2, radius-4/2+outfeed_offset]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
 }
 
 module out_feed_stack_punch(s=3, extra=0) {
