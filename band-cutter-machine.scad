@@ -15,7 +15,6 @@ axle_display=axle_dia - 0.5;
 mount_hole_dia=4.5;
 mount_hole_pos=5;  // from outside
 spoke_angle=60;
-do_screws=false;
 do_spokes=true;
 wheel_idler_axle=5;
 
@@ -69,13 +68,7 @@ module spoke_cut_widening(from_edge=cut_slot_deep) {
   widening_r=2 + spoke_thick;
   hull() {
     translate([radius - from_edge, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
-    if (do_screws) {
-      for (a = [-5, 5]) {
-        rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
-      }
-    } else {
-      translate([radius, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
-    }
+    translate([radius, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
   }
 }
 
@@ -115,18 +108,6 @@ module basic_wheel() {
 
       spoke_cut_widening();
 
-      // Spoke mounts
-      if (do_screws) {
-        for (a=[spoke_angle:spoke_angle:179]) {
-          rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
-          rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
-        }
-
-        for (a = [-5, 5, 175, 185]) {
-          rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
-        }
-      }
-
     }
 
     translate([0, 0, -band_thick/2]) cylinder(r=radius, h=band_thick);
@@ -139,15 +120,6 @@ module wheel_assembly() {
   difference() {
     basic_wheel();
     spoke_cut_widening_punch();
-    if (do_screws) {
-      for (a=[spoke_angle:spoke_angle:179]) {
-        rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
-        rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
-      }
-      for (a = [-5, 5, 175, 185]) {
-        rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
-      }
-    }
     mount_place_punch(dia=axle_dia);
   }
 
