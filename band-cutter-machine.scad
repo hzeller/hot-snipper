@@ -145,13 +145,8 @@ module anim(s=4) {
   rotate([0, 0, 0]) {
     rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) stack(s);
     knife(s, anim_stage = (t > 0.8) ? (t-0.8)/0.2 : 0);
-
-    //rotate([90, 0, 180]) rotate([0, -90, 0]) color("darkgray") tangential_band(r=radius, band_wide=band_thick-band_separation-1, in_angle=45, out_angle=135, total_len=500, start_len=481.5-t*button_hole_distance*hole_count);
   }
 }
-
-//wheel_assembly();
-//stack(1);
 
 module arc_range(start=-10, end=10, radius=100, high=5) {
   hull() {
@@ -276,21 +271,21 @@ module support_enforder(s=5) {
   }
 }
 
-module out_feed_material() {
+module outfeed_material() {
   translate([-band_thick/2, outfeed_offset, radius+outfeed_offset]) {
     translate([0, 2, -4]) cube([band_thick, 15, 4]);
   }
 }
 
-module out_feed_punch() {
+module outfeed_punch() {
   rotate([0, 90, 0]) translate([0, 0, -band_thick/2-e]) cylinder(r=radius+outfeed_offset, h=band_thick+2*e);
   rotate([0, 90, 0]) translate([0, 0, -2-e]) cylinder(r=radius+outfeed_offset+blade_h+2, h=4+2*e);
 }
 
-module out_feed_stack_material(s=3, extra=0) {
+module outfeed_stack_material(s=3, extra=0) {
   d = band_thick;
   for (i = [0:1:s-e]) {
-    translate([-d*i, 0, 0]) out_feed_material();
+    translate([-d*i, 0, 0]) outfeed_material();
   }
 
   slot_w=13;
@@ -307,38 +302,17 @@ module out_feed_stack_material(s=3, extra=0) {
   translate([-d*s/2+d/2, 19+slot_w/2, radius-4/2+outfeed_offset]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
 }
 
-module out_feed_stack_punch(s=3, extra=0) {
+module outfeed_stack_punch(s=3, extra=0) {
   d = band_thick;
   for (i = [0:1:s-e]) {
-    translate([-d*i, 0, 0]) out_feed_punch();
+    translate([-d*i, 0, 0]) outfeed_punch();
   }
 }
 
-module out_feed_stack(s=3, extra=0) {
+module outfeed_stack(s=3, extra=0) {
   difference() {
-    out_feed_stack_material(s, extra);
-    out_feed_stack_punch(s, extra);
-  }
-}
-
-module tangential_band(r=30, in_angle=22, out_angle=90,
-		       band_wide=20, start_len=470, total_len=500) {
-  thick=1;
-  circumreference=2*PI*r;
-  wheel_len=(out_angle-in_angle)/360 * circumreference;
-  max_wrap_wheel = total_len - start_len;
-  echo ("Wheel len:", wheel_len, "; max wrap:", max_wrap_wheel);
-  out_len=total_len - start_len - wheel_len;
-  translate([0, 0, -band_wide/2]) {
-    rotate([0, 0, in_angle]) translate([r, -start_len, 0]) cube([thick, start_len, band_wide]);
-    rotate([0, 0, out_angle]) translate([r, 0, 0]) cube([thick, out_len, band_wide]);
-    degree_step=1;
-    segment_len=circumreference*degree_step/360;
-    for (range = [0:degree_step:out_angle-in_angle+degree_step/2]) {
-      a = in_angle + range;
-      if (range/degree_step * segment_len <= max_wrap_wheel)
-        rotate([0, 0, a]) translate([r, -segment_len/2, 0]) cube([thick, segment_len+e, band_wide]);
-    }
+    outfeed_stack_material(s, extra);
+    outfeed_stack_punch(s, extra);
   }
 }
 
@@ -358,7 +332,7 @@ module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
   rotate([-120, 0, 0]) translate([-band_thick/2, 0, radius+8+2]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
 
   anim(wheel_stack);
-  rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") out_feed_stack(wheel_stack, extra=extra);
+  rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") outfeed_stack(wheel_stack, extra=extra);
 
   for (h = mount_holes) {
     translate([0, h[0], h[1]]) rotate([0, 90, 0])
