@@ -3,6 +3,9 @@ e=0.02;
 
 PI=3.1415926536;
 
+tray_idler_dia=20;
+
+stack=2;
 bands_per_wheel=0.5;
 cut_slot_deep=10;
 axle_dia=6.5;   // 1/4" rod + extra
@@ -12,7 +15,7 @@ mount_hole_pos=5;  // from outside
 spoke_angle=60;
 do_screws=false;
 do_spokes=true;
-support_wheel_axle=5;
+knife_idler_axle=5;
 
 wheel_wall=1;
 spoke_thick=1;
@@ -23,7 +26,7 @@ band_thick=19.5 + band_separation;
 band_center_thick=band_thick;
 
 
-side_wall_clearance=10;
+side_wall_clearance=6.95;
 
 hole_count=18;   // This determines the length
 hole_angle=360/(bands_per_wheel*hole_count);
@@ -38,7 +41,10 @@ blade_h=3.5;
 blade_w=0.9;
 blade_l=5;
 
-echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count);
+mount_holes = [[-30, -radius-2], [30, -radius-2],
+	       [30, radius+10], [-28, radius+5]];
+
+echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance);
 
 module mount_place(dia=mount_hole_dia) {
      translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
@@ -198,7 +204,7 @@ module support_arc(center=0, angle_dist=10, radius=100, high=10) {
 
 //stack(2);
 
-module support_wheel(is_first=false, is_last=false) {
+module knife_idler(is_first=false, is_last=false) {
      center_free=3;
      outer=8;
      big_part=(is_first || is_last)
@@ -213,17 +219,17 @@ module support_wheel(is_first=false, is_last=false) {
      }
 }
 
-module support_wheel_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false) {
+module knife_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false) {
      d = band_thick;
      color("blue") for (i = [0:1:s+1-e]) {
 	  is_first=(i == 0);
 	  is_last = (i == s);
 	  if (print_distance < 0) {
 	       translate([0, 0, is_first ? 0 : (i-0.5)*d+1.5])
-		    support_wheel(is_first=is_first, is_last=is_last);
+		    knife_idler(is_first=is_first, is_last=is_last);
 	  } else {
 	       translate([i*print_distance, 0, 0])
-		    support_wheel(is_first=is_first, is_last=is_last);
+		    knife_idler(is_first=is_first, is_last=is_last);
 	  }
      }
      axle_extra=side_wall_clearance + 10;
@@ -232,13 +238,13 @@ module support_wheel_stack(s=5, print_distance=-1, with_axle=false, gravity_hole
      }
      if (gravity_holes) {
 	  hull() {
-	       translate([3, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+	       translate([1, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
 	       translate([-15, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
 	  }
      }
 }
 
-module band_tray(s=5, len=60, extra=0) {
+module band_tray(s=5, len=40, extra=0) {
      color("silver") for (i = [0:1:s-e]) {
 	  translate([i*band_thick, 0, 0]) {
 	       cube([band_thick, len, 1]);
@@ -247,22 +253,23 @@ module band_tray(s=5, len=60, extra=0) {
 		    cube([band_separation/2+e, len, 4]);
 	  }
      }
+     slot_w=20;
      sw_r=4/2 + extra;
      sw=side_wall_clearance+4;
      translate([-sw, 0, 0]) hull() {
 	  translate([0, 10, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-	  translate([0, 30, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
+	  translate([0, 10+slot_w, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
      }
      translate([s*band_thick, 0, 0]) hull() {
 	  translate([0, 10, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-	  translate([0, 30, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
+	  translate([0, 10+slot_w, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
      }
 
-     //cube([side_wall_clearance, 30, 4]);
+     translate([-side_wall_clearance, 10/2, 0]) cube([side_wall_clearance, 30, 4]);
+     translate([s*band_thick, 10/2, 0]) cube([side_wall_clearance, 30, 4]);
 }
 
-module tray_wheel() {
-     outer=9;
+module tray_idler(outer=15) {
      difference() {
 	  union() {
 	       cylinder(r=outer, h=band_thick-band_separation-1);
@@ -272,13 +279,13 @@ module tray_wheel() {
      }
 }
 
-module tray_wheel_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false) {
+module tray_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false, outer=tray_idler_dia/2) {
      d = band_thick;
      color("blue") for (i = [0:1:s-e]) {
 	  if (print_distance < 0) {
-	       translate([0, 0, i*d]) tray_wheel();
+	       translate([0, 0, i*d]) tray_idler(outer);
 	  } else {
-	       translate([i*print_distance, 0, 0]) tray_wheel();
+	       translate([i*print_distance, 0, 0]) tray_idler(outer);
 	  }
      }
      axle_extra=side_wall_clearance + 10;
@@ -318,23 +325,24 @@ module out_feed_stack(s=3, extra=0) {
      for (i = [0:1:s-e]) {
 	  translate([-d*i, 0, 0]) out_feed();
      }
+     slot_w=13;
      sw_r=4/2+extra;
      sw=side_wall_clearance+4;
      translate([-d*s+d/2-sw, 0, 0]) hull() {
 	  translate([0, 19, radius-4/2+0.5]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
-	  translate([0, 32, radius-4/2+0.5]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
-
+	  translate([0, 19+slot_w, radius-4/2+0.5]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
      }
+     translate([-d/2, 19+slot_w/2, radius-4/2+0.5]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
 }
 
 //tooth_wheel();
 //half_wheel();
 //anim(5);
 
-module support_wheel_printing() {
-     support_wheel_stack(s=wheel_stack, print_distance=25);
-     translate([0, 25, 0]) support_wheel_stack(s=wheel_stack, print_distance=25);
-     translate([0, 2*25, 0]) tray_wheel_stack(s=wheel_stack, print_distance=25);
+module print_knife_idler(s=stack) {
+     knife_idler_stack(s=s, print_distance=25);
+     translate([0, 25, 0]) knife_idler_stack(s=s, print_distance=25);
+     translate([0, 2*25, 0]) tray_idler_stack(s=s, print_distance=25);
 }
 
 module tangential_band(r=30, in_angle=22, out_angle=90,
@@ -361,15 +369,21 @@ module tangential_band(r=30, in_angle=22, out_angle=90,
 module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
      rotate([0, 0, 0]) {
 	  rotate([-45, 0, 0]) {
-	       translate([-band_thick/2, 15, radius-0.8]) band_tray(s=wheel_stack, len=40, extra=extra);
-	       translate([-band_thick/2+(band_separation+1)/2, 30, radius+9+0.8]) rotate([0, 90, 0]) tray_wheel_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+	       translate([-band_thick/2, 15, radius-0.8]) band_tray(s=wheel_stack, len=35, extra=extra);
+	       translate([-band_thick/2+(band_separation+1)/2, 30, radius+tray_idler_dia/2+0.8]) rotate([0, 90, 0]) tray_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
 	  }
      }
-     rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) support_wheel_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
-     rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) support_wheel_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+     rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) knife_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+     rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) knife_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
 
      anim(wheel_stack);
      rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") out_feed_stack(wheel_stack, extra=extra);
+
+     for (h = mount_holes) {
+	  translate([0, h[0], h[1]]) rotate([0, 90, 0])
+	       translate([0, 0, -band_thick/2-side_wall_clearance])
+	       stack_spacer();
+     }
 }
 
 module panel_corner(r=4, thick=3) {
@@ -385,7 +399,7 @@ module nema17_mount() {
 }
 
 module mount_panel(s=2, thick=3) {
-     difference() {
+     color("azure", 0.1) difference() {
 	  translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) hull() {
 	       translate([0, -45, -radius - 5]) panel_corner(thick=thick);
 	       translate([0, 60, -radius - 5]) panel_corner(thick=thick);
@@ -408,11 +422,11 @@ module mount_panel(s=2, thick=3) {
 	  }
 
 	  axle_extra=side_wall_clearance + 10;
-	  translate([0, -30, -radius-2]) rotate([0, 90, 0]) translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=s*band_thick+2*axle_extra);
-	  translate([0, 40, -radius-2]) rotate([0, 90, 0]) translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=s*band_thick+2*axle_extra);
-	  translate([0, 40, radius+10]) rotate([0, 90, 0]) translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=s*band_thick+2*axle_extra);
-	  translate([0, -28, radius+5]) rotate([0, 90, 0]) translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=s*band_thick+2*axle_extra);
-
+	  for (h = mount_holes) {
+	       translate([0, h[0], h[1]]) rotate([0, 90, 0])
+		    translate([0, 0, -band_thick/2-axle_extra])
+		    cylinder(r=axle_dia/2, h=s*band_thick+2*axle_extra);
+	  }
      }
 }
 
@@ -422,13 +436,28 @@ module mount_panel_2d() {
      }
 }
 
-mount_panel_2d();
-//mechanics_assembly(2);
-//mount_panel(thick=2);
+module stack_spacer(s=stack) {
+     total_width = stack * band_thick + 2*side_wall_clearance;
+     color("azure", 0.25) difference() {
+	  cylinder(r=axle_dia/2+1, h=total_width);
+	  translate([0, 0, -e]) cylinder(r=axle_dia/2, h=total_width+2*e);
+     }
+}
 
+module print_stack_spacer() {
+     stack_spacer();
+     translate([15, 0, 0]) stack_spacer();
+     translate([0, 15, 0]) stack_spacer();
+     translate([15, 15, 0]) stack_spacer();
+}
+
+//mount_panel_2d();
+mechanics_assembly(stack);
+mount_panel(thick=3);
+
+//print_stack_spacer();
 //out_feed_stack(2);
-//tangential_band();
-//support_wheel_printing();
+//print_knife_idler(2);
 //stack(wheel_stack);
 //support_enforder(wheel_stack);
 //band_tray(2);
