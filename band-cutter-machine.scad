@@ -320,15 +320,6 @@ module out_feed_stack(s=3, extra=0) {
     out_feed_stack_punch(s, extra);
   }
 }
-//tooth_wheel();
-//half_wheel();
-//anim(5);
-
-module print_wheel_idler(s=stack) {
-  wheel_idler_stack(s=s, print_distance=25);
-  translate([0, 25, 0]) wheel_idler_stack(s=s, print_distance=25);
-  translate([0, 2*25, 0]) infeed_idler_stack(s=s, print_distance=25);
-}
 
 module tangential_band(r=30, in_angle=22, out_angle=90,
 		       band_wide=20, start_len=470, total_len=500) {
@@ -423,12 +414,6 @@ module mount_panel(s=2, thick=3) {
   }
 }
 
-module mount_panel_2d() {
-  projection(cut=true) {
-    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel(1);
-  }
-}
-
 module stack_spacer(s=stack) {
   total_width = stack * band_thick + 2*side_wall_clearance;
   color("azure", 0.25) difference() {
@@ -437,6 +422,8 @@ module stack_spacer(s=stack) {
   }
 }
 
+
+// Useful outputting modules
 module print_stack_spacer() {
   stack_spacer();
   translate([15, 0, 0]) stack_spacer();
@@ -444,14 +431,18 @@ module print_stack_spacer() {
   translate([15, 15, 0]) stack_spacer();
 }
 
-//mount_panel_2d();
+module print_wheel_idler(s=stack) {
+  wheel_idler_stack(s=s, print_distance=25);
+  translate([0, 25, 0]) wheel_idler_stack(s=s, print_distance=25);
+  translate([0, 2*25, 0]) infeed_idler_stack(s=s, print_distance=25);
+}
+
+module mount_panel_2d() {
+  projection(cut=true) {
+    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel(1);
+  }
+}
+
 mechanics_assembly(stack);
 //mount_panel(thick=2);
 translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3);
-
-//print_stack_spacer();
-//out_feed_stack(2);
-//print_wheel_idler(2);
-//stack(wheel_stack);
-//support_enforder(wheel_stack);
-//infeed_tray(2);
