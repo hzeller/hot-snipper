@@ -22,8 +22,8 @@ knife_idler_axle=5;
 wheel_wall=1;
 spoke_thick=1;
 
-band_separation=1;
-band_thick=19.5 + band_separation;
+band_separation=0.8;
+band_thick=19.7 + band_separation;
 //band_center_thick=12;
 band_center_thick=band_thick;
 
@@ -38,6 +38,7 @@ hole_angle=360/(bands_per_wheel*hole_count);
 button_hole_distance=25.4 / 1.5;  // probably actual value.
 circ=bands_per_wheel * hole_count * button_hole_distance;
 radius=circ / (2*PI);
+out_feed_offset=0.5;
 
 blade_h=3.5;
 blade_w=0.9;
@@ -310,33 +311,50 @@ module support_enforder(s=5) {
   }
 }
 
-module out_feed() {
-  offset=0.5;
-  difference() {
-    translate([-band_thick/2, offset, radius+offset]) {
-      translate([0, 2, -1]) cube([band_thick, 30, 1]);
-      translate([0, 2, -5]) cube([band_thick, 15, 5]);
-    }
-    rotate([0, 90, 0]) translate([0, 0, -band_thick/2-e]) cylinder(r=radius+offset, h=band_thick+2*e);
-    rotate([0, 90, 0]) translate([0, 0, -2-e]) cylinder(r=radius+offset+5, h=4+2*e);
+module out_feed_material() {
+  translate([-band_thick/2, out_feed_offset, radius+out_feed_offset]) {
+    translate([0, 2, -4]) cube([band_thick, 15, 4]);
+  }
+}
+
+module out_feed_punch() {
+  rotate([0, 90, 0]) translate([0, 0, -band_thick/2-e]) cylinder(r=radius+out_feed_offset, h=band_thick+2*e);
+  rotate([0, 90, 0]) translate([0, 0, -2-e]) cylinder(r=radius+out_feed_offset+blade_h+2, h=4+2*e);
+}
+
+module out_feed_stack_material(s=3, extra=0) {
+  d = band_thick;
+  for (i = [0:1:s-e]) {
+    translate([-d*i, 0, 0]) out_feed_material();
+  }
+
+  slot_w=13;
+  sw_r=4/2+extra;
+  sw=side_wall_clearance+4;
+
+  // Rounded slot mount
+  translate([-d*s+d/2-sw, 0, 0]) hull() {
+    translate([0, 19, radius-4/2+out_feed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
+    translate([0, 19+slot_w, radius-4/2+out_feed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
+  }
+
+  // Shoulder
+  translate([-d/2, 19+slot_w/2, radius-4/2+out_feed_offset]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
+}
+
+module out_feed_stack_punch(s=3, extra=0) {
+  d = band_thick;
+  for (i = [0:1:s-e]) {
+    translate([-d*i, 0, 0]) out_feed_punch();
   }
 }
 
 module out_feed_stack(s=3, extra=0) {
-  d = band_thick;
-  for (i = [0:1:s-e]) {
-    translate([-d*i, 0, 0]) out_feed();
+  difference() {
+    out_feed_stack_material(s, extra);
+    out_feed_stack_punch(s, extra);
   }
-  slot_w=13;
-  sw_r=4/2+extra;
-  sw=side_wall_clearance+4;
-  translate([-d*s+d/2-sw, 0, 0]) hull() {
-    translate([0, 19, radius-4/2+0.5]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
-    translate([0, 19+slot_w, radius-4/2+0.5]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
-  }
-  translate([-d/2, 19+slot_w/2, radius-4/2+0.5]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
 }
-
 //tooth_wheel();
 //half_wheel();
 //anim(5);
@@ -388,7 +406,7 @@ module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
   }
 }
 
-module panel_corner(r=4, thick=3) {
+module panel_corner(r=6, thick=3) {
   rotate([0, 90, 0]) translate([0, 0, -thick/2]) cylinder(r=r, h=thick);
 }
 
@@ -401,14 +419,15 @@ module nema17_mount() {
 }
 
 module mount_panel(s=2, thick=3) {
+  mount_panel_corners = [[-38, -radius - 5], [58, -radius - 5],  // bottom
+                         [-38, +radius+20], [58, +radius],       // top
+                         [-5, +radius+50], [+5, +radius+50]];    // summit
+
   color("azure", 0.1) difference() {
     translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) hull() {
-      translate([0, -45, -radius - 5]) panel_corner(thick=thick);
-      translate([0, 60, -radius - 5]) panel_corner(thick=thick);
-      translate([0, 60, +radius]) panel_corner(thick=thick);
-      translate([0, -5, +radius+50]) panel_corner(thick=thick);
-      translate([0, +5, +radius+50]) panel_corner(thick=thick);
-      translate([0, -40, +radius+20]) panel_corner(thick=thick);
+      for (c = mount_panel_corners) {
+        translate([0, c[0], c[1]]) panel_corner(thick=thick);
+      }
     }
     mechanics_assembly(s, gravity_holes=true, extra=0.15);
     rotate([0, -90, 0]) nema17_mount();
@@ -455,7 +474,8 @@ module print_stack_spacer() {
 
 //mount_panel_2d();
 mechanics_assembly(stack);
-mount_panel(thick=3);
+//mount_panel(thick=3);
+//translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3);
 
 //print_stack_spacer();
 //out_feed_stack(2);
