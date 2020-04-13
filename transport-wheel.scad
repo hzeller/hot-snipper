@@ -3,17 +3,25 @@ e=0.02;
 
 PI=3.1415926536;
 
-bands_per_wheel=2;
+bands_per_wheel=4/3;
 cut_slot_deep=10;
-axle_dia=8.2;
+axle_dia=6.5;   // 1/4" rod + extra
 mount_hole_dia=4.5;
 mount_hole_pos=5;  // from outside
 spoke_angle=45;
+do_screws=false;
+do_spokes=true;
+support_wheel_axle=5;
 
-band_center_thick=12;
+wheel_wall=0.6;
+spoke_thick=0.6;
+
 band_separation=1;
 band_thick=19.5 + band_separation;
-spoke_thick=2;
+//band_center_thick=12;
+band_center_thick=band_thick;
+
+
 
 hole_count=18;   // This determines the length
 hole_angle=360/(bands_per_wheel*hole_count);
@@ -25,10 +33,10 @@ circ=bands_per_wheel * hole_count * button_hole_distance;
 radius=circ / (2*PI);
 
 blade_h=3;
-blade_w=0.8;
+blade_w=0.9;
 blade_l=6;
 
-echo("circumreference ", circ, "; radius=", radius);
+echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count);
 
 module mount_place(dia=mount_hole_dia) {
      translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
@@ -46,82 +54,90 @@ module hole_retainer() {
      }
 }
 
-module spoke_cut_widening_part(from_edge) {
+module spoke_cut_widening(from_edge=cut_slot_deep) {
+     widening_r=2 + spoke_thick;
      hull() {
-	  translate([radius - from_edge, 0, -band_thick/2]) cylinder(r=6, h=band_thick);
-	  //translate([radius, 0, 0]) cylinder(r=6, h=band_thick);
-	  for (a = [-5, 5]) {
-	       rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+	  translate([radius - from_edge, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
+	  if (do_screws) {
+	       for (a = [-5, 5]) {
+		    rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+	       }
+	  } else {
+	       translate([radius, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
 	  }
      }
 }
-module spoke_cut_widening(from_edge=cut_slot_deep) {
-     spoke_cut_widening_part(from_edge);
-     rotate([0, 0, 180]) spoke_cut_widening_part(from_edge);
-}
 
-module spoke_cut_widening_punch_part(from_edge) {
+module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
      translate([radius-from_edge, 0, -15]) hull() {
 	  cylinder(r=2, h=30);
 	  translate([50, 0, 0]) cylinder(r=2, h=30);
      }
 }
-module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
-     spoke_cut_widening_punch_part(from_edge);
-     rotate([0, 0, 180]) spoke_cut_widening_punch_part(from_edge);
-}
 
 module basic_wheel() {
      translate([0, 0, -band_center_thick/2]) difference() {
 	  cylinder(r=radius, h=band_center_thick);
-	  translate([0, 0, -e]) cylinder(r=radius-2, h=band_center_thick+2*e);
+	  translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_center_thick+2*e);
      }
 
      intersection() {
 	  translate([0, 0, -band_thick/2]) difference() {
 	       cylinder(r=radius, h=band_thick);
-	       translate([0, 0, -e]) cylinder(r=radius-2, h=band_thick+2*e);
+	       translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_thick+2*e);
 	  }
 	  union() {
 	       support_arc(0, 30, radius=radius+10, high=band_thick);
-	       support_arc(180, 30, radius=radius+10, high=band_thick);
+	       if (bands_per_wheel==2)
+		    support_arc(180, 30, radius=radius+10, high=band_thick);
 	  }
      }
 
      // spokes.
      intersection() {
 	  union() {
-	       for (a=[0:spoke_angle:180]) {
-		    rotate([0, 0, a]) cube([2*radius, spoke_thick, band_center_thick], center=true);
-	       }
-	       // Spoke mounts
-	       for (a=[spoke_angle:spoke_angle:179]) {
-		    rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
-		    rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+	       for (a=[0:spoke_angle:360]) {
+		    rotate([0, 0, a]) {
+			 if (do_spokes) translate([radius/2, 0, 0]) cube([radius, spoke_thick, band_center_thick], center=true);
+			 spoke_cut_widening();
+		    }
 	       }
 
-	       for (a = [-5, 5, 175, 185]) {
-		    rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+	       // Spoke mounts
+	       if (do_screws) {
+		    for (a=[spoke_angle:spoke_angle:179]) {
+			 rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+			 rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+		    }
+
+		    for (a = [-5, 5, 175, 185]) {
+			 rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place();
+		    }
 	       }
-	       spoke_cut_widening();
+
 	  }
 
 	  translate([0, 0, -band_thick/2]) cylinder(r=radius, h=band_thick);
      }
 
-     mount_place(dia=axle_dia);
+     if (do_spokes) mount_place(dia=axle_dia);  // axle in center
 }
 
 module wheel_assembly() {
      difference() {
 	  basic_wheel();
-	  spoke_cut_widening_punch();
-	  for (a=[spoke_angle:spoke_angle:179]) {
-	       rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
-	       rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
+	  for (a=[0:spoke_angle:360]) {
+	       rotate([0, 0, a]) spoke_cut_widening_punch();
 	  }
-	  for (a = [-5, 5, 175, 185]) {
-	       rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
+
+	  if (do_screws) {
+	       for (a=[spoke_angle:spoke_angle:179]) {
+		    rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
+		    rotate([0, 0, -a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
+	       }
+	       for (a = [-5, 5, 175, 185]) {
+		    rotate([0, 0, a]) translate([radius-mount_hole_pos, 0, 0]) mount_place_punch();
+	       }
 	  }
 	  mount_place_punch(dia=axle_dia);
      }
@@ -153,16 +169,19 @@ module stack(layers=3) {
 }
 
 module knife(layers=3, anim_stage=0) {
+     side=10;
      down=sin(anim_stage*180) * 15;
      d=band_thick;
-     translate([-10, 0, radius+10-down]) color("red") cube([layers*d+20, 1, 30]);
+     translate([-side-d/2, -0.5, radius+10-down]) color("red") cube([layers*d+(2*side), 1, 30]);
+     rotate([-13, 0, 0]) translate([-band_thick/2, 0, radius+10]) rotate([0, 90, 0]) support_wheel_stack(layers);
+     rotate([13, 0, 0]) translate([-band_thick/2, 0, radius+10]) rotate([0, 90, 0]) support_wheel_stack(layers);
 }
 
-module anim() {
+module anim(s=4) {
      t=$t;
-     rotate([60, 0, 0]) {
-	  rotate([(t < 0.8) ? (t/0.8) * 180 : 0, 0, 0]) rotate([0, 90, 0]) stack(4);
-	  knife(4, anim_stage = (t > 0.8) ? (t-0.8)/0.2 : 0);
+     rotate([0, 0, 0]) {
+	  rotate([((t < 0.8) ? (t/0.8) * -270 : 0), 0, 0]) rotate([0, 90, 0]) stack(s);
+	  rotate([-90, 0, 0]) knife(s, anim_stage = (t > 0.8) ? (t-0.8)/0.2 : 0);
      }
 }
 
@@ -186,9 +205,91 @@ module support_arc(center=0, angle_dist=10, radius=100, high=10) {
      }
 }
 
-stack(1);
+//stack(2);
 
+module support_wheel(is_first=false, is_last=false) {
+     center_free=3;
+     big_part=(is_first || is_last)
+	  ? (band_thick-center_free)/2
+	  : (band_thick-center_free);
+     difference() {
+	  union() {
+	       cylinder(r=10, h=big_part);
+	       if (!is_last) cylinder(r=8, h=big_part+center_free);
+	  }
+	  translate([0, 0, -e]) cylinder(r=axle_dia/2, h=band_thick+2*e);
+     }
+}
+
+module support_wheel_stack(s=5, print_distance=-1) {
+     d = band_thick;
+     color("blue") for (i = [0:1:s+1-e]) {
+	  is_first=(i == 0);
+	  is_last = (i == s);
+	  if (print_distance < 0) {
+	       translate([0, 0, is_first ? 0 : (i-0.5)*d+1.5])
+		    support_wheel(is_first=is_first, is_last=is_last);
+	  } else {
+	       translate([i*print_distance, 0, 0])
+		    support_wheel(is_first=is_first, is_last=is_last);
+	  }
+     }
+}
+
+module band_tray(s=5, len=60) {
+     color("silver") for (i = [0:1:s-e]) {
+	  translate([i*band_thick, 0, 0]) {
+	       cube([band_thick, len, 0.8]);
+	       cube([band_separation/2, len, 4]);
+	       translate([band_thick-band_separation/2, 0, 0])
+		    cube([band_separation/2+e, len, 4]);
+	  }
+     }
+}
+
+module tray_wheel() {
+     difference() {
+	  union() {
+	       cylinder(r=10, h=band_thick-band_separation-1);
+	       cylinder(r=5, h=band_thick);
+	  }
+	  translate([0, 0, -e]) cylinder(r=axle_dia/2, h=band_thick+2*e);
+     }
+}
+
+module tray_wheel_stack(s=5, print_distance=-1) {
+     d = band_thick;
+     for (i = [0:1:s-e]) {
+	  if (print_distance < 0) {
+	       translate([0, 0, i*d]) tray_wheel();
+	  } else {
+	       translate([i*print_distance, 0, 0]) tray_wheel();
+	  }
+     }
+}
+
+module support_enforder(s=5) {
+     translate([0, 0, -band_thick/2]) difference() {
+	  cylinder(r=radius+3.5, h=s*band_thick);
+	  translate([0, 0, -e]) cylinder(r=radius+2.5, h=s*band_thick+2*e);
+     }
+}
 
 //tooth_wheel();
 //half_wheel();
-//anim();
+//anim(5);
+
+wheel_stack=2;
+
+if (true) {
+     rotate([0, 0, 0]) {
+	  translate([-band_thick/2, 0, -radius-4]) band_tray(s=wheel_stack);
+	  //translate([-band_thick/2+(band_separation+1)/2, 40, radius+10+0.8]) rotate([0, 90, 0]) color("blue") tray_wheel_stack();
+     }
+     anim(wheel_stack);
+}
+
+//stack(wheel_stack);
+//band_tray();
+//support_wheel_stack(s=5, print_distance=25);
+//translate([0, 25, 0]) support_wheel_stack(s=5, print_distance=25);
