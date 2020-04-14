@@ -3,11 +3,11 @@
 
 *Work in Progress*
 
-Here at [MakerNexus], we're now producing the face-shield parts via
-injection-molding, so now one bottleneck is to cut enough elastic bands.
+Here at [MakerNexus], we're now producing the [Covid-19 effort][FaceShields]
+face-shield parts via injection-molding, so now one bottleneck is to cut
+enough elastic bands, which at this point happens entirely by hand.
 
-A Device to cut button-hole elastic, needed for the
-[Covid-19 face shields][FaceShields].
+This device helps to cut button-hole elastic.
 
 It is specialized to work with the particular band we have in width
 and button-hole distance; it cuts exactly the length we need (18 holes apart,
@@ -30,6 +30,10 @@ Open `band-cutter-machine.3mf` with prusa-slicer and reload with `F5`.
  two bands                          | five bands
 ------------------------------------|------------------------------------
 ![](img/two-band-machine-slice.png) | ![](img/five-band-machine-slice.png)
+
+The side-panels take a lot of time to print, so if there is a laser cutter
+available, the Makefile will also generate `fab/mount_panel_2d.dxf` for
+lasercutting the panel.
 
 ![](img/machine-render.png)
 

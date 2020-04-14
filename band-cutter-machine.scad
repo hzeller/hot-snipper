@@ -6,11 +6,13 @@ PI=3.1415926536;
 
 stack=2;
 
-button_hole_distance=25.4 / 1.5;  // our band
+//button_hole_distance=25.4 / 1.5;  // theoretical..
+button_hole_distance=564 / 34;      // measured ...
 hole_count=18;   // This determines the length of the final band. Must be even.
 
-band_separation=4;               // How far apart we have the bands
-band_thick=19.9 + band_separation;  // Actual width + separation.
+band_separation=4.1;               // How far apart we have the bands
+baseline_band=19.8;                // Elastic band width.
+band_thick=baseline_band + band_separation;  // Actual width + separation.
 
 side_wall_clearance=7;           // e.g. for nuts and bolts.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
@@ -37,8 +39,8 @@ outfeed_offset=0.5;
 
 // Blades engaging with the button-holes
 blade_h=3.5;
-blade_w=0.9;
-blade_l=5;
+blade_w=0.7;
+blade_l=4;
 
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [36, -radius+10],
@@ -171,7 +173,7 @@ module support_arc(center=0, angle_dist=10, radius=100, high=10) {
 }
 
 module wheel_idler(is_first=false, is_last=false) {
-  center_free=3;
+  center_free=3;  // TODO: changing this makes other things offset.
   outer=8;
   big_part=(is_first || is_last)
     ? (band_thick-center_free)/2
@@ -198,10 +200,12 @@ module wheel_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=
         wheel_idler(is_first=is_first, is_last=is_last);
     }
   }
+
   axle_extra=side_wall_clearance + 10;
   if (with_axle) {
     color("gray") translate([0, 0, -axle_extra]) cylinder(r=axle_display/2, h=s*d+2*axle_extra);
   }
+
   if (gravity_holes) {
     hull() {
       translate([1, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
@@ -210,11 +214,11 @@ module wheel_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=
   }
 }
 
-module infeed_idler(outer=15) {
+module infeed_idler(outer=15, is_last=false) {
   difference() {
     union() {
       cylinder(r=outer, h=band_thick-band_separation-1);
-      cylinder(r=axle_dia/2+1, h=band_thick);
+      if (!is_last) cylinder(r=axle_dia/2+1, h=band_thick);
     }
     translate([0, 0, -e]) cylinder(r=axle_dia/2, h=band_thick+2*e);
   }
@@ -223,10 +227,11 @@ module infeed_idler(outer=15) {
 module infeed_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false, outer=infeed_idler_dia/2) {
   d = band_thick;
   color("blue") for (i = [0:1:s-e]) {
+    is_last= (i == s-1);
     if (print_distance < 0) {
-      translate([0, 0, i*d]) infeed_idler(outer);
+      translate([0, 0, i*d]) infeed_idler(outer, is_last=is_last);
     } else {
-      translate([i*print_distance, 0, 0]) infeed_idler(outer);
+      translate([i*print_distance, 0, 0]) infeed_idler(outer, is_last=is_last);
     }
   }
   axle_extra=side_wall_clearance + 10;
@@ -334,17 +339,17 @@ module infeed_hinge(hinge_thick, clearance, tray_idler_distance,
 }
 
 module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
-                 snap_detent=1.5, do_poke=false) {
+                 snap_detent=3, do_punch=false) {
   lock_r=4/2;
   hinge_thick=1;
-  spring_distance=snap_detent*2.5;
+  spring_distance=snap_detent*2;
   finger_extra_len=8;
   bend_len=15;  // TODO: calculate from some material modulus
   difference() {
     union() {
       translate([-w, 0, 0]) cube([w, l, h]);
       translate([-w, 0, 0]) cube([spring_distance/2, l+finger_extra_len, h]);
-      translate([0, l-lock_r, h/2]) rotate([0, -90, 0]) cylinder(r=lock_r, h=w+snap_detent + (do_poke ? 10 : 0));
+      translate([0, l-lock_r, h/2]) rotate([0, -90, 0]) cylinder(r=lock_r + (do_punch ? 0.3 : 0), h=w+snap_detent + (do_punch ? 10 : 0));
     }
     hull() {
       translate([-w/2, l-bend_len, -e]) cylinder(r=w/2-hinge_thick, h=h+2*e);
@@ -365,9 +370,9 @@ module infeed_fancy_tray(wheel_stack=stack, extra=0) {
 
   // Snap lock
   translate([0, tray_idler_shift+7, -below])
-    snap_lock(h=8, l=tray_len-7, do_poke = (extra > 0));
+    snap_lock(h=8, l=tray_len-7, do_punch = (extra > 0));
   translate([wheel_stack*band_thick, tray_idler_shift+7, -below])
-    scale([-1, 1, 1]) snap_lock(h=8, l=tray_len-7, do_poke = (extra > 0));
+    scale([-1, 1, 1]) snap_lock(h=8, l=tray_len-7, do_punch = (extra > 0));
 
   // hinge
   infeed_hinge(side_wall_clearance-0.6, 0.3, tray_idler_distance, tray_idler_shift);
