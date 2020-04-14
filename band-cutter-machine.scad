@@ -32,6 +32,7 @@ circ=bands_per_wheel * hole_count * button_hole_distance;
 radius=circ / (2*PI);
 
 idler_dia=16;
+idler_cutout=4;
 infeed_idler_dia=25;
 
 infeed_tray_high=4;
@@ -173,7 +174,7 @@ module support_arc(center=0, angle_dist=10, radius=100, high=10) {
 }
 
 module wheel_idler(is_first=false, is_last=false) {
-  center_free=3;  // TODO: changing this makes other things offset.
+  center_free=idler_cutout;
   outer=8;
   big_part=(is_first || is_last)
     ? (band_thick-center_free)/2
@@ -187,13 +188,13 @@ module wheel_idler(is_first=false, is_last=false) {
   }
 }
 
-module wheel_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false) {
+module wheel_idler_stack(s=stack, print_distance=-1, with_axle=false, gravity_holes=false) {
   d = band_thick;
   color("blue") for (i = [0:1:s+1-e]) {
     is_first=(i == 0);
     is_last = (i == s);
     if (print_distance < 0) {
-      translate([0, 0, is_first ? 0 : (i-0.5)*d+1.5])
+      translate([0, 0, is_first ? 0 : (i-0.5)*d+idler_cutout/2])
         wheel_idler(is_first=is_first, is_last=is_last);
     } else {
       translate([i*print_distance, 0, 0])
