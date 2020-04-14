@@ -4,13 +4,14 @@ $fn=96;
 e=0.02;
 PI=3.1415926536;
 
+stack=2;
+
 button_hole_distance=25.4 / 1.5;  // our band
 hole_count=18;   // This determines the length of the final band. Must be even.
 
 band_separation=4;               // How far apart we have the bands
 band_thick=19.9 + band_separation;  // Actual width + separation.
 
-stack=2;
 side_wall_clearance=7;           // e.g. for nuts and bolts.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
 
@@ -503,6 +504,11 @@ module print_outfeed() {
   rotate([0, 180, 0]) outfeed_stack(stack);
 }
 
-mechanics_assembly(stack);
-mount_panel();
-translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+module full_assembly() {
+  mechanics_assembly(stack);
+  mount_panel(thick=3);
+  // The other side has the motor mount.
+  translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+}
+
+full_assembly();

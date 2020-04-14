@@ -11,3 +11,10 @@ all: fab/mount_panel.stl \
 fab/%.scad : band-cutter-machine.scad
 	mkdir -p fab
 	echo "use <../band-cutter-machine.scad>; $*();" > $@
+
+img/machine-render.png: fab/full_assembly.scad
+	openscad -o$@-tmp.png --imgsize=4096,4096 \
+             --camera=15.51,10.88,19.48,76,0,257,374 \
+             --colorscheme=Nature $< \
+         && cat $@-tmp.png | pngtopnm | pnmcrop | pnmscale 0.25 | pnmtopng > $@
+	rm -f $@-tmp.png
