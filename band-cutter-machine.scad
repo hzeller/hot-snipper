@@ -30,6 +30,7 @@ radius=circ / (2*PI);
 
 idler_dia=16;
 infeed_idler_dia=25;
+
 infeed_tray_high=4;
 outfeed_offset=0.5;
 
@@ -351,7 +352,7 @@ module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
   }
 }
 
-module infeed_fancy_tray(wheel_stack=2, extra=0) {
+module infeed_fancy_tray(wheel_stack=stack, extra=0) {
   idler_r=idler_dia/2;
   tray_idler_distance=1;
   tray_idler_shift=5;
@@ -479,9 +480,17 @@ module print_stack_spacer() {
 }
 
 module print_wheel_idler(s=stack) {
-  wheel_idler_stack(s=s, print_distance=26);
-  translate([0, 20, 0]) wheel_idler_stack(s=s, print_distance=26);
-  translate([0, 20+22, 0]) infeed_idler_stack(s=s, print_distance=26);
+  // We need three: two on top, one at the infeed.
+  pack_offset_x=cos(60) * (idler_dia/2) * 2;
+  pack_offset_y=sin(60) * (idler_dia/2+0.3) * 2;
+  for (i = [0:1:3-e]) {
+    translate([i%2==1 ? pack_offset_x : 0, i*pack_offset_y, 0])
+      wheel_idler_stack(s=s, print_distance=idler_dia+0.3);
+  }
+}
+
+module print_infeed_weight_idler(s=stack) {
+  infeed_idler_stack(s=s, print_distance=infeed_idler_dia+1);
 }
 
 module mount_panel_2d() {
@@ -494,8 +503,6 @@ module print_outfeed() {
   rotate([0, 180, 0]) outfeed_stack(stack);
 }
 
-//print_outfeed();
-//print_wheel_idler();
 mechanics_assembly(stack);
 mount_panel();
-//translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
