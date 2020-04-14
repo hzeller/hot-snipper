@@ -4,20 +4,20 @@ $fn=96;
 e=0.02;
 PI=3.1415926536;
 
-hole_count=18;   // This determines the length
 button_hole_distance=25.4 / 1.5;  // our band
+hole_count=18;   // This determines the length of the final band. Must be even.
 
 band_separation=0.75;               // How far apart we have the bands
 band_thick=19.7 + band_separation;  // Actual width + separation.
 
 stack=2;
-side_wall_clearance=6.95;
+side_wall_clearance=6.95;           // e.g. for nuts and bolts.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
 
 bands_per_wheel=0.5;
 cut_slot_deep=10;
 
-axle_display=axle_dia - 0.5;
+axle_display=axle_dia;
 spoke_angle=60;
 
 // Main wheel parameters
@@ -36,6 +36,7 @@ blade_h=3.5;
 blade_w=0.9;
 blade_l=5;
 
+// Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [19, -radius-3],
 	       [38, radius-10], [-28, radius+5]];
 
@@ -49,7 +50,8 @@ module mount_place_punch(dia) {
   translate([0, 0, -(band_thick+e)/2]) cylinder(r=dia/2, h=band_thick+2*e);
 }
 
-module hole_retainer() {
+// A 'tooth' engaging with a butotn hole.
+module button_hole_tooth() {
   color("yellow") hull() {
     cube([e, blade_l, blade_w], center=true);
     translate([1.5, 0, 0]) cube([e, blade_l, blade_w], center=true);
@@ -57,6 +59,7 @@ module hole_retainer() {
   }
 }
 
+// Widening to accomodate hot knife through wheel.
 module spoke_cut_widening(from_edge=cut_slot_deep) {
   widening_r=2 + spoke_thick;
   hull() {
@@ -98,9 +101,7 @@ module basic_wheel() {
           translate([radius/2, 0, 0]) cube([radius, spoke_thick, band_thick], center=true);
         }
       }
-
       spoke_cut_widening();
-
     }
 
     translate([0, 0, -band_thick/2]) cylinder(r=radius, h=band_thick);
@@ -117,11 +118,11 @@ module wheel_assembly() {
   }
 
   for (a=[hole_angle/2:hole_angle:360-e]) {
-    rotate([0, 0, a]) translate([radius-0.5, 0, 0]) hole_retainer();
+    rotate([0, 0, a]) translate([radius-0.5, 0, 0]) button_hole_tooth();
   }
 }
 
-module stack(layers=3, with_axle=true) {
+module wheel_stack(layers=3, with_axle=true) {
   d=band_thick;
   axle_extra=side_wall_clearance + 10;
   for (i = [0:1:layers-e]) {
@@ -143,7 +144,7 @@ module knife(layers=3, anim_stage=0) {
 module anim(s=4) {
   t=$t;
   rotate([0, 0, 0]) {
-    rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) stack(s);
+    rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) wheel_stack(s);
     knife(s, anim_stage = (t > 0.8) ? (t-0.8)/0.2 : 0);
   }
 }
@@ -164,8 +165,6 @@ module support_arc(center=0, angle_dist=10, radius=100, high=10) {
     translate([0, 0, -high/2]) arc_range(start=center-small_dist, end=center+small_dist, radius=radius, high=e);
   }
 }
-
-//stack(2);
 
 module wheel_idler(is_first=false, is_last=false) {
   center_free=3;
@@ -316,24 +315,26 @@ module outfeed_stack(s=3, extra=0) {
   }
 }
 
+// All the mechanics combined: wheel and idlers.
 module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
-  rotate([0, 0, 0]) {
-    rotate([0, 0, 0]) {
-      translate([-band_thick/2, 30, -radius-5]) infeed_tray(s=wheel_stack, len=34, extra=extra);
-      translate([-band_thick/2+(band_separation+1)/2, 50, -radius-5+infeed_idler_dia/2+1.1]) rotate([0, 90, 0]) infeed_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
-    }
-  }
+  // Infeed.
+  translate([-band_thick/2, 30, -radius-5]) infeed_tray(s=wheel_stack, len=34, extra=extra);
+  translate([-band_thick/2+(band_separation+1)/2, 50, -radius-5+infeed_idler_dia/2+1.1]) rotate([0, 90, 0]) infeed_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+
+  // Feed idler from infeed to main-wheel
+  rotate([-120, 0, 0]) translate([-band_thick/2, 0, radius+8+2]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
 
   // Idlers around the knife
   rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
   rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
 
-  // Feed idler
-  rotate([-120, 0, 0]) translate([-band_thick/2, 0, radius+8+2]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
-
-  anim(wheel_stack);
+  // Outfeed
   rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") outfeed_stack(wheel_stack, extra=extra);
 
+  // Wheel + knife. Animatable.
+  anim(wheel_stack);
+
+  // Spacers to mount assembly together.
   for (h = mount_holes) {
     translate([0, h[0], h[1]]) rotate([0, 90, 0])
       translate([0, 0, -band_thick/2-side_wall_clearance])
@@ -345,15 +346,16 @@ module panel_corner(r=6, thick=3) {
   rotate([0, 90, 0]) translate([0, 0, -thick/2]) cylinder(r=r, h=thick);
 }
 
-module nema17_mount() {
+module nema17_mount(h=50) {
   d=31/2;
-  translate([-d, -d, 0]) cylinder(r=3.2/2, h=50);
-  translate([ d, -d, 0]) cylinder(r=3.2/2, h=50);
-  translate([ d, d, 0]) cylinder(r=3.2/2, h=50);
-  translate([-d, d, 0]) cylinder(r=3.2/2, h=50);
+  for (p = [[-d, -d], [d, -d], [d, d], [-d, d]]) {
+    translate(p) cylinder(r=3.2/2, h=h);
+  }
+  cylinder(r=22.5/2, h=h);
 }
 
-module mount_panel(s=2, thick=3) {
+module mount_panel(thick=3, with_motor=true) {
+  s=1;
   mount_panel_corners = [[-39, -radius - 6],  // bottom, out-feed side
                          [-39, -7], [-30, +radius+5],      // up out-feed side.
                          [-5, +radius+50], [+5, +radius+50], // summit
@@ -367,7 +369,7 @@ module mount_panel(s=2, thick=3) {
       }
     }
     mechanics_assembly(s, gravity_holes=true, extra=0.15);
-    rotate([0, -90, 0]) nema17_mount();
+    if (with_motor) rotate([0, -90, 0]) nema17_mount();
 
     // Knife slide
     translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) {
@@ -413,10 +415,10 @@ module print_wheel_idler(s=stack) {
 
 module mount_panel_2d() {
   projection(cut=true) {
-    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel(1);
+    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel();
   }
 }
 
 mechanics_assembly(stack);
-//mount_panel(thick=2);
+mount_panel(thick=2);
 translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3);
