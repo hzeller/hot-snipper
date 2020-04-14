@@ -333,11 +333,12 @@ module infeed_hinge(hinge_thick, clearance, tray_idler_distance,
 }
 
 module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
-                 snap_detent=1, do_poke=false) {
+                 snap_detent=1.5, do_poke=false) {
   lock_r=4/2;
-  hinge_thick=0.8;
+  hinge_thick=1;
   spring_distance=snap_detent*2.5;
   finger_extra_len=8;
+  bend_len=15;  // TODO: calculate from some material modulus
   difference() {
     union() {
       translate([-w, 0, 0]) cube([w, l, h]);
@@ -345,7 +346,7 @@ module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
       translate([0, l-lock_r, h/2]) rotate([0, -90, 0]) cylinder(r=lock_r, h=w+snap_detent + (do_poke ? 10 : 0));
     }
     hull() {
-      translate([-w/2, w/2, -e]) cylinder(r=w/2-hinge_thick, h=h+2*e);
+      translate([-w/2, l-bend_len, -e]) cylinder(r=w/2-hinge_thick, h=h+2*e);
       translate([-w+spring_distance/2+hinge_thick, l, -e]) cylinder(r=spring_distance/2, h=h+2*e);
     }
   }
@@ -374,7 +375,7 @@ module infeed_fancy_tray(wheel_stack=2, extra=0) {
     infeed_hinge(2, 0.3, tray_idler_distance, tray_idler_shift);
 }
 
-module infeed_assembly(wheel_stack=2, correct_angle=0, extra=0, gravity_holes=true) {
+module infeed_assembly(wheel_stack=2, correct_angle=0, extra=0, gravity_holes=false) {
   idler_r=idler_dia/2;
   translate([-band_thick/2, 0, 0]) rotate([correct_angle, 0, 0]) {
     rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
@@ -492,5 +493,5 @@ module mount_panel_2d() {
 
 mechanics_assembly(stack);
 mount_panel(thick=3);
-translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
-//infeed_assembly(extra=0.5);
+//translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+//infeed_assembly(extra=0);
