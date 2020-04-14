@@ -10,7 +10,7 @@ hole_count=18;   // This determines the length of the final band. Must be even.
 band_separation=0.75;               // How far apart we have the bands
 band_thick=19.7 + band_separation;  // Actual width + separation.
 
-stack=2;
+stack=3;
 side_wall_clearance=6.95;           // e.g. for nuts and bolts.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
 
@@ -28,7 +28,9 @@ hole_angle=360/(bands_per_wheel*hole_count);
 circ=bands_per_wheel * hole_count * button_hole_distance;
 radius=circ / (2*PI);
 
-infeed_idler_dia=20;
+idler_dia=16;
+infeed_idler_dia=25;
+infeed_tray_high=4;
 outfeed_offset=0.5;
 
 // Blades engaging with the button-holes
@@ -37,7 +39,8 @@ blade_w=0.9;
 blade_l=5;
 
 // Places where we add spacers to rigidly hold together the two side-frames.
-mount_holes = [[-30, -radius-3], [19, -radius-3],
+mount_holes = [[-30, -radius-3],
+               //[19, -radius-3],  // TODO: move this one
 	       [38, radius-10], [-28, radius+5]];
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance);
@@ -206,36 +209,11 @@ module wheel_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=
   }
 }
 
-module infeed_tray(s=5, len=40, extra=0) {
-  color("silver") for (i = [0:1:s-e]) {
-    translate([i*band_thick, 0, 0]) {
-      cube([band_thick, len, 1]);
-      cube([band_separation/2, len, 4]);
-      translate([band_thick-band_separation/2, 0, 0])
-        cube([band_separation/2+e, len, 4]);
-    }
-  }
-  slot_w=20;
-  sw_r=4/2 + extra;
-  sw=side_wall_clearance+4;
-  translate([-sw, 0, 0]) hull() {
-    translate([0, 10, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-    translate([0, 10+slot_w, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-  }
-  translate([s*band_thick, 0, 0]) hull() {
-    translate([0, 10, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-    translate([0, 10+slot_w, 4/2]) rotate([0, 90, 0]) cylinder(r=sw_r, h=sw);
-  }
-
-  translate([-side_wall_clearance, 10/2, 0]) cube([side_wall_clearance, 30, 4]);
-  translate([s*band_thick, 10/2, 0]) cube([side_wall_clearance, 30, 4]);
-}
-
 module infeed_idler(outer=15) {
   difference() {
     union() {
       cylinder(r=outer, h=band_thick-band_separation-1);
-      cylinder(r=outer-5, h=band_thick);
+      cylinder(r=axle_dia/2+1, h=band_thick);
     }
     translate([0, 0, -e]) cylinder(r=axle_dia/2, h=band_thick+2*e);
   }
@@ -315,14 +293,107 @@ module outfeed_stack(s=3, extra=0) {
   }
 }
 
+module infeed_tray(s=5, len=40, extra=0) {
+  color("silver") for (i = [0:1:s-e]) {
+    translate([i*band_thick, 0, 0]) {
+      difference() {
+        cube([band_thick, len, 1]);
+        // since it is centered, we end up cutting out len/4
+        translate([band_thick/2, 0, 0]) cube([4, len/2, 3], center=true);
+      }
+      cube([band_separation/2, len, infeed_tray_high]);
+      translate([band_thick-band_separation/2, 0, 0])
+        cube([band_separation/2+e, len, infeed_tray_high]);
+    }
+  }
+}
+
+module infeed_hinge_material(hinge_thick, clearance, tray_idler_distance, tray_idler_shift) {
+  idler_r = idler_dia/2;
+  snap_high=8;  // we connect to the tray the same way as the snap connect
+  // Hinge
+  hull() {
+    translate([-(hinge_thick+clearance), 0, 0]) rotate([0, 90, 0]) cylinder(r=idler_r, h=hinge_thick);
+    translate([-(clearance+hinge_thick), tray_idler_shift, -idler_r-infeed_tray_high-tray_idler_distance]) cube([hinge_thick, idler_r, infeed_tray_high]);
+  }
+  // Hinge connect
+  translate([-(clearance+hinge_thick), tray_idler_shift, -idler_r-infeed_tray_high-tray_idler_distance]) cube([clearance+hinge_thick+e, idler_r, snap_high]);
+}
+
+module infeed_hinge_punch(hinge_thick, clearance) {
+  translate([-(hinge_thick+clearance)-e, 0, 0]) rotate([0, 90, 0]) cylinder(r=axle_dia/2, h=hinge_thick+2*e);
+}
+
+module infeed_hinge(hinge_thick, clearance, tray_idler_distance,
+                    tray_idler_shift) {
+  difference() {
+    infeed_hinge_material(hinge_thick, clearance, tray_idler_distance, tray_idler_shift);
+    infeed_hinge_punch(hinge_thick, clearance);
+  }
+}
+
+module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
+                 snap_detent=1, do_poke=false) {
+  lock_r=4/2;
+  hinge_thick=0.8;
+  spring_distance=snap_detent*2.5;
+  finger_extra_len=8;
+  difference() {
+    union() {
+      translate([-w, 0, 0]) cube([w, l, h]);
+      translate([-w, 0, 0]) cube([spring_distance/2, l+finger_extra_len, h]);
+      translate([0, l-lock_r, h/2]) rotate([0, -90, 0]) cylinder(r=lock_r, h=w+snap_detent + (do_poke ? 10 : 0));
+    }
+    hull() {
+      translate([-w/2, w/2, -e]) cylinder(r=w/2-hinge_thick, h=h+2*e);
+      translate([-w+spring_distance/2+hinge_thick, l, -e]) cylinder(r=spring_distance/2, h=h+2*e);
+    }
+  }
+}
+
+module infeed_fancy_tray(wheel_stack=2, extra=0) {
+  idler_r=idler_dia/2;
+  tray_idler_distance=1;
+  tray_idler_shift=5;
+  tray_len=34;
+  below=idler_r + infeed_tray_high + tray_idler_distance;
+
+  translate([0, tray_idler_shift, -below])
+    infeed_tray(s=wheel_stack, len=tray_len, extra=extra);
+
+    // Snap lock
+  translate([0, tray_idler_shift+7, -below])
+    snap_lock(h=8, l=tray_len-7, do_poke = (extra > 0));
+  translate([wheel_stack*band_thick, tray_idler_shift+7, -below])
+    scale([-1, 1, 1]) snap_lock(h=8, l=tray_len-7, do_poke = (extra > 0));
+
+  // hinge
+  infeed_hinge(2, 0.3, tray_idler_distance, tray_idler_shift);
+  // same, mirrored on other side.
+  translate([wheel_stack*band_thick, 0, 0]) scale([-1, 1, 1])
+    infeed_hinge(2, 0.3, tray_idler_distance, tray_idler_shift);
+}
+
+module infeed_assembly(wheel_stack=2, correct_angle=0, extra=0, gravity_holes=true) {
+  idler_r=idler_dia/2;
+  translate([-band_thick/2, 0, 0]) rotate([correct_angle, 0, 0]) {
+    rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
+    infeed_fancy_tray(wheel_stack, extra=extra);
+  }
+
+  // this    v-- is fudging it. Somewhere else this offset is broken
+  translate([-band_thick/2+0.5+band_separation/2,
+             30,
+             0.5])
+    rotate([0, 90, 0]) infeed_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+}
+
 // All the mechanics combined: wheel and idlers.
 module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
-  // Infeed.
-  translate([-band_thick/2, 30, -radius-5]) infeed_tray(s=wheel_stack, len=34, extra=extra);
-  translate([-band_thick/2+(band_separation+1)/2, 50, -radius-5+infeed_idler_dia/2+1.1]) rotate([0, 90, 0]) infeed_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
-
-  // Feed idler from infeed to main-wheel
-  rotate([-120, 0, 0]) translate([-band_thick/2, 0, radius+8+2]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
+  ia=-42;     // infeed angle
+  id=radius+idler_dia/2+2; // infeed distance
+  translate([0, cos(ia)*id, sin(ia)*id])
+    infeed_assembly(wheel_stack, 0, extra, gravity_holes=gravity_holes);
 
   // Idlers around the knife
   rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
@@ -354,12 +425,12 @@ module nema17_mount(h=50) {
   cylinder(r=22.5/2, h=h);
 }
 
-module mount_panel(thick=3, with_motor=true) {
+module mount_panel(thick=3, with_motor=false) {
   s=1;
   mount_panel_corners = [[-39, -radius - 6],  // bottom, out-feed side
                          [-39, -7], [-30, +radius+5],      // up out-feed side.
                          [-5, +radius+50], [+5, +radius+50], // summit
-                         [60, 0], [60, -radius - 6]];  // down, in-feed
+                         [62, 0], [62, -radius - 6]];  // down, in-feed
 
 
   color("azure", 0.1) difference() {
@@ -420,5 +491,6 @@ module mount_panel_2d() {
 }
 
 mechanics_assembly(stack);
-mount_panel(thick=2);
-translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3);
+mount_panel(thick=3);
+translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+//infeed_assembly(extra=0.5);
