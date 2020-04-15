@@ -344,21 +344,35 @@ module infeed_hinge(hinge_thick, clearance, tray_idler_distance,
 }
 
 module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
-                 snap_detent=3, do_punch=false) {
+                 snap_detent=2, do_punch=false) {
   lock_r=4/2;
   hinge_thick=1;
-  spring_distance=snap_detent*2;
+  spring_travel=snap_detent*2;
   finger_extra_len=8;
   bend_len=15;  // TODO: calculate from some material modulus
   difference() {
     union() {
-      translate([-w, 0, 0]) cube([w, l, h]);
-      translate([-w, 0, 0]) cube([spring_distance/2, l+finger_extra_len, h]);
-      translate([0, l-lock_r, h/2]) rotate([0, -90, 0]) cylinder(r=lock_r + (do_punch ? 0.3 : 0), h=w+snap_detent + (do_punch ? 10 : 0));
+      translate([-w, 0, 0]) cube([w, l, h]);  // body
+      translate([-w, 0, 0]) {
+        cube([spring_travel/2, l+finger_extra_len, h]);  // finger extension
+        grab_len=3.5;  // Fudged, matches back side panel.
+
+        // Make a little rough thing to grab on to.
+        translate([0, l+finger_extra_len-grab_len, 0]) {
+          //cube([2, grab_len, h]);
+          r=grab_len/4;
+          translate([0, grab_len-r, 0]) cylinder(r=r, h=h);
+          translate([0, +r, 0]) cylinder(r=r, h=h);
+        }
+      }
+
+      // Snap poky thing
+      translate([0, l-lock_r, h/2]) rotate([0, -90, 0])
+        cylinder(r=lock_r + (do_punch ? 0.3 : 0), h=w+snap_detent + (do_punch ? 10 : 0));
     }
     hull() {
       translate([-w/2, l-bend_len, -e]) cylinder(r=w/2-hinge_thick, h=h+2*e);
-      translate([-w+spring_distance/2+hinge_thick, l, -e]) cylinder(r=spring_distance/2, h=h+2*e);
+      translate([-w+spring_travel/2+hinge_thick, l, -e]) cylinder(r=spring_travel/2, h=h+2*e);
     }
   }
 }
