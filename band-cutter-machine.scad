@@ -443,7 +443,7 @@ module panel_corner(r=6, thick=3) {
   rotate([0, 90, 0]) translate([0, 0, -thick/2]) cylinder(r=r, h=thick);
 }
 
-module nema17_mount(h=50) {
+module nema17_punch(h=50) {
   d=31/2;
   for (p = [[-d, -d], [d, -d], [d, d], [-d, d]]) {
     translate(p) cylinder(r=3.2/2, h=h);
@@ -466,7 +466,7 @@ module mount_panel(thick=2, with_motor=true) {
       }
     }
     mechanics_assembly(s, gravity_holes=true, extra=0.15);
-    if (with_motor) rotate([0, -90, 0]) nema17_mount();
+    if (with_motor) rotate([0, -90, 0]) nema17_punch();
 
     // Knife slide
     translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) {
@@ -562,31 +562,54 @@ module full_assembly() {
   translate([stack*band_thick - band_thick/2 + side_wall_clearance+panel_thickness, 0, 0]) nema_motor_stand();
 }
 
+module pcb_rails(outer_w=40, inner_w=30, len=30) {
+  pcb_thick=1.8;
+  rail_thick=1;
+  translate([len/2, 0, 0]) difference() {
+    union() {
+      translate([0, 0, +(pcb_thick+rail_thick)/2]) cube([len, outer_w, rail_thick], center=true);
+      translate([0, 0, -(pcb_thick+rail_thick)/2]) cube([len, outer_w, rail_thick], center=true);
+    }
+
+    cube([len+2*e, inner_w, pcb_thick+2*rail_thick+2*e], center=true);
+  }
+}
+
 module print_nema_motor_stand() {
   // TODO: derived from lowest point in mount_panel_corners and corner radius.
   below_center=radius + 6 + 6;
-  union() {
-    motor_deep=47;
-    flange_thick=2.1;
-    d=31/2;      // Distance of nema holes.
-    corner_r=5;
-    difference() {
-      union() {
-        hull() {
-          for (p = [[-d,-d], [-d, d], [d+5, -d], [d+5, d]])
-            translate(p) cylinder(r=5, h=flange_thick);
-        }
-        w=2*(d+corner_r);
-        translate([42/2, -w/2, 0]) cube([below_center - 42/2, w, motor_deep]);
+  motor_deep=49;
+  flange_thick=2.1;
+  d=31/2;      // Distance of nema holes.
+  corner_r=5;
+  motor_body_size=42.2;   // Nominal 1.7"
+  center_hole=22.2;
+  cable_w=9;
+  cable_from_front=38 + flange_thick;
+  cable_deep=15;  // just long enough to punch out at the back;
+  difference() {
+    union() {
+      hull() {
+        for (p = [[-d,-d], [-d, d], [d+5, -d], [d+5, d]])
+          translate(p) cylinder(r=5, h=flange_thick);
       }
+      w=2*(d+corner_r);
+      translate([motor_body_size/2, -w/2, 0])
+        cube([below_center - motor_body_size/2, w, motor_deep]);
+    }
 
-      translate([0, 0, -e]) {
-        cylinder(r=22/2, flange_thick+2*e);
-        nema17_mount();
-        translate([42+2, 0, 0]) cylinder(r=42/2, h=motor_deep+2*e);
-      }
+    translate([0, 0, -e]) {
+      cylinder(r=center_hole/2, flange_thick+2*e);
+      nema17_punch();
+      // Cable cutout.
+      translate([0, -cable_w/2, cable_from_front])
+        cube([below_center, cable_w, cable_deep+e]);
+      // neat 'dome' cutout.
+      translate([42+2, 0, 0]) cylinder(r=42/2, h=motor_deep+2*e);
     }
   }
+  translate([below_center-8, 0, 0]) rotate([0, -90, 0])
+    pcb_rails(len=motor_deep-10, outer_w=40, inner_w=15);
 }
 
 module nema_motor_stand() {
