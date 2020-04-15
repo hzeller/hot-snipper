@@ -38,6 +38,8 @@ infeed_idler_dia=25;
 infeed_tray_high=4;
 outfeed_offset=0.5;
 
+nema_cutout=false;   // should we have a central cut-out for the nema17?
+
 // Blades engaging with the button-holes
 blade_h=3.5;
 blade_w=0.7;
@@ -430,10 +432,10 @@ module nema17_mount(h=50) {
   for (p = [[-d, -d], [d, -d], [d, d], [-d, d]]) {
     translate(p) cylinder(r=3.2/2, h=h);
   }
-  cylinder(r=22.5/2, h=h);
+  if (nema_cutout) cylinder(r=22.5/2, h=h);
 }
 
-module mount_panel(thick=2, with_motor=false) {
+module mount_panel(thick=2, with_motor=true) {
   s=1;
   mount_panel_corners = [[-39, -radius - 6],  // bottom, out-feed side
                          [-39, -7], [-30, +radius+5],      // up out-feed side.
