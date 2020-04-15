@@ -144,19 +144,20 @@ module wheel_stack(layers=stack, with_axle=false) {
   }
 }
 
-module knife(layers=3, anim_stage=0) {
-  movement=15;
+module knife(s=stack) {
   side=0;
-  down=sin(anim_stage*180) * movement;
   d=band_thick;
-  translate([-side-d/2, -0.5, radius+10-down]) color("red") cube([layers*d+(2*side), 1, 30]);
+  translate([-side-d/2, -0.5, radius+10]) color("red") cube([s*d, 1, 30]);
 }
 
 module anim(s=4) {
   t=$t;
   rotate([0, 0, 0]) {
     rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
-    knife(s, anim_stage = (t > 0.8) ? (t-0.8)/0.2 : 0);
+    knife_anim_stage=(t > 0.8) ? (t-0.8)/0.2 : 0;
+    movement=15;
+    down=sin(knife_anim_stage*180) * movement;
+    translate([0, 0, -down]) knife(s);
   }
 }
 
