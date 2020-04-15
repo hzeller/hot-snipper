@@ -35,6 +35,8 @@ idler_dia=16;
 idler_cutout=4;
 infeed_idler_dia=25;
 
+rotation_clearance=0.3;
+
 infeed_tray_high=4;
 outfeed_offset=0.5;
 
@@ -378,10 +380,10 @@ module infeed_fancy_tray(wheel_stack=stack, extra=0) {
     scale([-1, 1, 1]) snap_lock(h=8, l=tray_len-7, do_punch = (extra > 0));
 
   // hinge
-  infeed_hinge(side_wall_clearance-0.6, 0.3, tray_idler_distance, tray_idler_shift);
+  infeed_hinge(side_wall_clearance-2*rotation_clearance, rotation_clearance, tray_idler_distance, tray_idler_shift);
   // same, mirrored on other side.
   translate([wheel_stack*band_thick, 0, 0]) scale([-1, 1, 1])
-    infeed_hinge(side_wall_clearance-0.6, 0.3, tray_idler_distance, tray_idler_shift);
+    infeed_hinge(side_wall_clearance-2*rotation_clearance, rotation_clearance, tray_idler_distance, tray_idler_shift);
 }
 
 module infeed_assembly(wheel_stack=2, correct_angle=0, extra=0, gravity_holes=false) {
@@ -527,7 +529,8 @@ module print_sidewall_clearance_distance_rings() {
   for (row = [0:1:2-e]) {
     for (col = [0:1:4-e]) {
       // We need two for the outer rollers
-      height = side_wall_clearance + ((col == 0) ? band_separation/2 : 0);
+      height = side_wall_clearance + ((col == 0) ? band_separation/2 : 0)
+        - rotation_clearance;  // These are always used on rotating parts.
       translate([row*place_dist + ((col % 2 == 0) ? pack_offset_x : 0),
                  col*pack_offset_y, 0])
         hollow_cylinder(r=outer/2, axle_r=axle_dia/2, h=height);
