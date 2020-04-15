@@ -1,3 +1,4 @@
+![](img/hot-snipper.png)
 
 # Hot Knife cutting machine for synthetic button-hole bands
 
