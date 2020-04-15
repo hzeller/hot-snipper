@@ -1,10 +1,12 @@
-
-all: fab/mount_panel.stl \
+ALL_TARGETS=fab/mount_panel.stl \
      fab/wheel_stack.stl fab/support_enforder.stl \
      fab/print_wheel_idler.stl fab/print_infeed_weight_idler.stl \
      fab/infeed_fancy_tray.stl fab/print_outfeed.stl \
-     fab/print_stack_spacer.stl print_sidewall_clearance_distance_rings \
+     fab/print_stack_spacer.stl \
+     fab/print_sidewall_clearance_distance_rings.stl \
      fab/mount_panel_2d.dxf
+
+all: $(ALL_TARGETS)
 
 %.stl: %.scad
 	openscad -o $@ $<
