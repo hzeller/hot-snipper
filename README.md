@@ -25,8 +25,10 @@ machine that can cut two bands in parallel.
 If the `stack` parameter in the [SCAD file](./band-cutter-machine.scad#L7)
 is changed, a machine that can cut up to 5 bands in parallel can can fit on
 a Prusa MK3 bed.
-Change the value, type `make`, go in the fab/ directory.
-Open `band-cutter-machine.3mf` with prusa-slicer and reload with `F5`.
+Change the value, type `make`, `cd fab/`.
+Open `band-cutter-machine.3mf` with prusa-slicer and reload with `F5`. There
+seems to be a bug in prusa-slicer which then slightly mis-aligns the cylinder
+support enforcer around the main wheel; adjust that first before slicing.
 
  two bands                          | five bands
 ------------------------------------|------------------------------------
