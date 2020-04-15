@@ -23,7 +23,8 @@ file contains a print layout that provides all the parts needed to print a
 machine that can cut two bands in parallel.
 
 If the `stack` parameter in the [SCAD file](./band-cutter-machine.scad#L7)
-is changed, a machine up to 5 bands in parallel can can fit on a Prusa MK3.
+is changed, a machine that can cut up to 5 bands in parallel can can fit on
+a Prusa MK3 bed.
 Change the value, type `make`, go in the fab/ directory.
 Open `band-cutter-machine.3mf` with prusa-slicer and reload with `F5`.
 
