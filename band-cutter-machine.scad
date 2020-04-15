@@ -553,10 +553,44 @@ module print_sidewall_clearance_distance_rings() {
 }
 
 module full_assembly() {
+  panel_thickness=3;
   mechanics_assembly(stack);
-  mount_panel(thick=3);
+  mount_panel(thick=panel_thickness);
   // The other side has the motor mount.
-  translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=3, with_motor=true);
+  translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=panel_thickness, with_motor=true);
+
+  translate([stack*band_thick - band_thick/2 + side_wall_clearance+panel_thickness, 0, 0]) nema_motor_stand();
+}
+
+module print_nema_motor_stand() {
+  // TODO: derived from lowest point in mount_panel_corners and corner radius.
+  below_center=radius + 6 + 6;
+  union() {
+    motor_deep=47;
+    flange_thick=2.1;
+    d=31/2;      // Distance of nema holes.
+    corner_r=5;
+    difference() {
+      union() {
+        hull() {
+          for (p = [[-d,-d], [-d, d], [d+5, -d], [d+5, d]])
+            translate(p) cylinder(r=5, h=flange_thick);
+        }
+        w=2*(d+corner_r);
+        translate([42/2, -w/2, 0]) cube([below_center - 42/2, w, motor_deep]);
+      }
+
+      translate([0, 0, -e]) {
+        cylinder(r=22/2, flange_thick+2*e);
+        nema17_mount();
+        translate([42+2, 0, 0]) cylinder(r=42/2, h=motor_deep+2*e);
+      }
+    }
+  }
+}
+
+module nema_motor_stand() {
+  rotate([0, 90, 0]) print_nema_motor_stand();
 }
 
 full_assembly();
