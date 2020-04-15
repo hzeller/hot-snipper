@@ -469,12 +469,17 @@ module mount_panel(thick=2, with_motor=false) {
   }
 }
 
+module hollow_cylinder(r=10, axle_r=8, h=10) {
+  difference() {
+    cylinder(r=r, h=h);
+    translate([0, 0, -e]) cylinder(r=axle_r, h=h+2*e);
+  }
+}
+
 module stack_spacer(s=stack) {
   total_width = stack * band_thick + 2*side_wall_clearance;
-  color("azure", 0.25) difference() {
-    cylinder(r=axle_dia/2+1, h=total_width);
-    translate([0, 0, -e]) cylinder(r=axle_dia/2, h=total_width+2*e);
-  }
+  color("azure", 0.25) hollow_cylinder(r=axle_dia/2+1, axle_r=axle_dia/2,
+                                       h=total_width);
 }
 
 
@@ -508,6 +513,24 @@ module mount_panel_2d() {
 
 module print_outfeed() {
   rotate([0, 180, 0]) outfeed_stack(stack);
+}
+
+// Distance rings. TODO: at some point, include that in the design, for
+// now we just add them as separate things to use.
+module print_sidewall_clearance_distance_rings() {
+  outer=axle_dia+4;
+  place_dist=outer+0.1;
+  pack_offset_x=cos(60) * place_dist;
+  pack_offset_y=sin(60) * place_dist;
+  for (row = [0:1:2-e]) {
+    for (col = [0:1:4-e]) {
+      // We need two for the outer rollers
+      height = side_wall_clearance + ((col == 0) ? band_separation/2 : 0);
+      translate([row*place_dist + ((col % 2 == 0) ? pack_offset_x : 0),
+                 col*pack_offset_y, 0])
+        hollow_cylinder(r=outer/2, axle_r=axle_dia/2, h=height);
+    }
+  }
 }
 
 module full_assembly() {
