@@ -39,7 +39,8 @@ knife_movement=20;
 knife_into_wheel=2;   // How deep we go into the slot. Mostly for animation
 knife_slider_slot_w=4;
 
-rotation_clearance=0.3;
+fit_tolerance=0.3;        // Tolerance of parts in contact.
+rotation_clearance=0.3;   // Similar for rotational
 
 infeed_tray_high=4;
 outfeed_offset=0.5;
@@ -56,6 +57,33 @@ mount_holes = [[-30, -radius-3], [36, -radius+10],
 	       [30, radius+5],   [-28, radius+5]];
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
+
+// m3_screw space occupied by a M3 screw with optional nut and
+// nut-access channel. Screw is centered around the Z-axis, with the
+// screw in the positive and screw-head in the negative range.
+// nut_at: start of where a m3 nut shoud be placed. -1 for off.
+// nut_channel: make a channel of given length to slide a nut in.
+//              nut channel extends in negative Y direction. Rotate as needed.
+module m3_screw(len=60, nut_at=-1, nut_channel=-1) {
+  m3_dia=3.4;         // Let it a little loose to not overconstrain things.
+  m3_head_dia=6;
+  m3_head_len=3;
+  m3_nut_dia=5.4 / cos(30) + 2*fit_tolerance;  // /= cos(30) for circumcircle
+  m3_nut_thick=2.8;
+
+  cylinder(r=m3_dia/2, h=len);
+  translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
+  if (nut_at >= 0) {
+    translate([0, 0, nut_at]) {
+      rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=m3_nut_thick, $fn=6);
+      nut_wide=m3_nut_dia * cos(30);
+      if (nut_channel > 0) {
+        nut_channel_len = max(nut_channel, m3_nut_dia/2);
+        translate([-nut_wide/2, -nut_channel_len, 0]) cube([nut_wide, nut_channel_len, m3_nut_thick]);
+      }
+    }
+  }
+}
 
 module mount_place(dia) {
   translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
@@ -90,7 +118,8 @@ module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
   }
 }
 
-module basic_wheel() {
+module basic_wheel(extra=0) {
+  // Outer cylinder, hollowed
   translate([0, 0, -band_thick/2]) difference() {
     cylinder(r=radius, h=band_thick);
     translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_thick+2*e);
@@ -113,7 +142,7 @@ module basic_wheel() {
     union() {
       for (a=[0:spoke_angle:360]) {
         rotate([0, 0, a]) {
-          translate([radius/2, 0, 0]) cube([radius, spoke_thick, band_thick], center=true);
+          translate([radius/2, 0, 0]) cube([radius, spoke_thick+extra, band_thick], center=true);
         }
       }
       spoke_cut_widening();
@@ -122,14 +151,14 @@ module basic_wheel() {
     translate([0, 0, -band_thick/2]) cylinder(r=radius, h=band_thick);
   }
 
-  mount_place(dia=axle_dia);  // axle in center
+  mount_place(dia=axle_dia+extra);  // axle in center
 }
 
-module wheel_assembly() {
+module wheel_assembly(extra=0) {
   difference() {
-    basic_wheel();
+    basic_wheel(extra);
     spoke_cut_widening_punch();
-    mount_place_punch(dia=axle_dia);
+    mount_place_punch(dia=axle_dia-extra);
   }
 
   for (a=[hole_angle/2:hole_angle:360-e]) {
@@ -534,7 +563,8 @@ module stack_spacer(s=stack) {
 }
 
 
-// Useful outputting modules
+// Useful outputting modules (TODO: should we add our own bottom support as
+// it is not possible right now to brim on just one part in prusa-slicer?)
 module print_stack_spacer() {
   stack_spacer();
   translate([15, 0, 0]) stack_spacer();
@@ -647,6 +677,23 @@ module print_nema_motor_stand() {
 
 module nema_motor_stand() {
   rotate([0, 90, 0]) print_nema_motor_stand();
+}
+
+// Coupling motor. For now manual to work with plain wheel, but later
+// should be fused with wheel.
+module motor_coupler() {
+  motor_axle=5.2;
+  engage_height=5;
+  height=side_wall_clearance - rotation_clearance + engage_height;
+  coupler_dia=16;
+
+  translate([0, 0, height]) rotate([0, 180, 0]) difference() {
+    cylinder(r=coupler_dia/2, h=height);
+    translate([0, 0, -band_thick/2+engage_height])
+      wheel_assembly(extra=fit_tolerance);
+    translate([0, 0, -e]) cylinder(r=motor_axle/2, h=height+2*e);
+    translate([0, -coupler_dia/2, engage_height+side_wall_clearance/2]) rotate([-90, 0, 0]) m3_screw(len=coupler_dia/2, nut_at=2.5, nut_channel=10);
+  }
 }
 
 full_assembly();
