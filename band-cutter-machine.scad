@@ -14,7 +14,7 @@ band_separation=4.1;               // How far apart we have the bands
 baseline_band=19.8;                // Elastic band width.
 band_thick=baseline_band + band_separation;  // Actual width + separation.
 
-side_wall_clearance=7;           // e.g. for nuts and bolts.
+side_wall_clearance=16;           // Clearance mostly for the hot wire.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
 
 bands_per_wheel=0.5;
@@ -35,6 +35,10 @@ idler_dia=16;
 idler_cutout=4;
 infeed_idler_dia=25;
 
+knife_movement=20;
+knife_into_wheel=2;   // How deep we go into the slot. Mostly for animation
+knife_slider_slot_w=4;
+
 rotation_clearance=0.3;
 
 infeed_tray_high=4;
@@ -51,7 +55,7 @@ blade_l=4;
 mount_holes = [[-30, -radius-3], [36, -radius+10],
 	       [30, radius+5],   [-28, radius+5]];
 
-echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance);
+echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
 module mount_place(dia) {
   translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
@@ -144,10 +148,44 @@ module wheel_stack(layers=stack, with_axle=false) {
   }
 }
 
+// The knife is mostly non-3D printed, but made out of other materials
+//  * the wire itself out of nichrome
+//  * the connecting columns are some threaded rod.
 module knife(s=stack) {
-  side=0;
   d=band_thick;
-  translate([-side-d/2, -0.5, radius+10]) color("red") cube([s*d, 1, 30]);
+  glow="orange";
+  translate([-d/2, -0, 0]) {
+    translate([-side_wall_clearance/2, 0, 0]) rotate([0, 90, 0]) color(glow)
+      cylinder(r=0.5, h=s*d+side_wall_clearance);  // 'wire'
+
+    translate([-side_wall_clearance/2, 0, 0]) {
+      cylinder(r=4.5/2, h=50);  // rod
+      translate([0, 0, knife_movement]) rotate([0, -90, 0]) cylinder(r=knife_slider_slot_w/2, h=side_wall_clearance/2+5);
+      color(glow) cylinder(r=5/2, h=1);
+    }
+    translate([s*d+side_wall_clearance/2, 0, 0]) {
+      cylinder(r=4.5/2, h=50);
+      translate([0, 0, knife_movement]) rotate([0, 90, 0]) cylinder(r=knife_slider_slot_w/2, h=side_wall_clearance/2+5);
+      color(glow) cylinder(r=5/2, h=1);
+    }
+
+  }
+}
+
+module knife_punch(wall_thick=3) {
+  // TODO: this should be going all through.
+  // Also, what is up with that 1.5 value, that should be derived from
+  // something.
+  translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) union() {
+    above=18;
+    slot_r=knife_slider_slot_w/2;
+    hull() {
+      translate([0, 0, radius + above]) panel_corner(r=slot_r, thick=wall_thick+2*e);
+      translate([0, 0, radius + above+knife_movement]) panel_corner(r=slot_r, thick=wall_thick+2*e);
+    }
+    // top screw to hold spring
+    translate([0, 0, radius + above+30]) panel_corner(r=3.2/2, thick=wall_thick+2*e);
+  }
 }
 
 module anim(s=4) {
@@ -155,9 +193,9 @@ module anim(s=4) {
   rotate([0, 0, 0]) {
     rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
     knife_anim_stage=(t > 0.8) ? (t-0.8)/0.2 : 0;
-    movement=15;
-    down=sin(knife_anim_stage*180) * movement;
-    translate([0, 0, -down]) knife(s);
+    down=sin(knife_anim_stage*180) * knife_movement;
+    translate([0, 0, radius + knife_movement - knife_into_wheel - down])
+      knife(s);
   }
 }
 
@@ -324,8 +362,9 @@ module infeed_hinge_material(hinge_thick, clearance, tray_idler_distance, tray_i
   idler_r = idler_dia/2;
   snap_high=8;  // we connect to the tray the same way as the snap connect
   // Hinge
+  hinge_r=axle_dia/2+2;
   hull() {
-    translate([-(hinge_thick+clearance), 0, 0]) rotate([0, 90, 0]) cylinder(r=idler_r, h=hinge_thick);
+    translate([-(hinge_thick+clearance), 0, 0]) rotate([0, 90, 0]) cylinder(r=hinge_r, h=hinge_thick);
     translate([-(clearance+hinge_thick), tray_idler_shift, -idler_r-infeed_tray_high-tray_idler_distance]) cube([hinge_thick, idler_r, infeed_tray_high]);
   }
   // Hinge connect
@@ -470,14 +509,7 @@ module mount_panel(thick=2, with_motor=true) {
     if (with_motor) rotate([0, -90, 0]) nema17_punch();
 
     // Knife slide
-    translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) {
-      above=18;
-      hull() {
-        translate([0, 0, radius + above]) panel_corner(r=4/2, thick=4);
-        translate([0, 0, radius + above+20]) panel_corner(r=4/2, thick=4);
-      }
-      translate([0, 0, radius + above+30]) panel_corner(r=3.2/2, thick=4);
-    }
+    knife_punch(wall_thick=thick);
 
     axle_extra=side_wall_clearance + 10;
     for (h = mount_holes) {
