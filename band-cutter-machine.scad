@@ -28,6 +28,7 @@ spoke_angle=60;
 // Main wheel parameters
 wheel_wall=1;
 spoke_thick=1;
+spoke_slot=4;
 
 hole_angle=360/(bands_per_wheel*hole_count);
 circ=bands_per_wheel * hole_count * button_hole_distance;
@@ -112,7 +113,7 @@ module button_hole_tooth() {
 
 // Widening to accomodate hot knife through wheel.
 module spoke_cut_widening(from_edge=cut_slot_deep) {
-  widening_r=2 + spoke_thick;
+  widening_r=spoke_slot + spoke_thick;
   hull() {
     translate([radius - from_edge, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
     translate([radius, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
@@ -121,8 +122,8 @@ module spoke_cut_widening(from_edge=cut_slot_deep) {
 
 module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
   translate([radius-from_edge, 0, -15]) hull() {
-    cylinder(r=2, h=30);
-    translate([50, 0, 0]) cylinder(r=2, h=30);
+    cylinder(r=spoke_slot, h=30);
+    translate([50, 0, 0]) cylinder(r=spoke_slot, h=30);
   }
 }
 
