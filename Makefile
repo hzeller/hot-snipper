@@ -4,7 +4,8 @@ ALL_TARGETS=fab/mount_panel.stl \
      fab/infeed_fancy_tray.stl fab/print_outfeed.stl \
      fab/print_stack_spacer.stl \
      fab/print_sidewall_clearance_distance_rings.stl \
-     fab/print_nema_motor_stand.stl fab/motor_coupler.stl \
+     fab/print_nema_motor_stand.stl \
+     fab/motor_coupler.stl fab/print_motor_bearing_parts.stl \
      fab/mount_panel_2d.dxf
 
 all: $(ALL_TARGETS)

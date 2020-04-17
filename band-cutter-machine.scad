@@ -16,6 +16,8 @@ band_thick=baseline_band + band_separation;  // Actual width + separation.
 
 side_wall_clearance=16;           // Clearance mostly for the hot wire.
 axle_dia=6.5;   // 1/4" rod + extra; we use that for all axles, main and idlers
+axle_hex_flat_size=11;  // hex nut for above.
+axle_hex_thick=6;
 
 bands_per_wheel=0.5;
 cut_slot_deep=10;
@@ -58,6 +60,15 @@ mount_holes = [[-30, -radius-3], [36, -radius+10],
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
+// Model a hex nut with the distance between the flat faces of flat_dia.
+// If channel_len is given, provides a sideways channel.
+module hex_nut(flat_dia, h, channel_len=-1) {
+  cylinder(r=flat_dia / cos(30) / 2, h=h, $fn=6);
+  if (channel_len > 0) {
+    translate([0, -flat_dia/2, 0]) cube([channel_len, flat_dia, h]);
+  }
+}
+
 // m3_screw space occupied by a M3 screw with optional nut and
 // nut-access channel. Screw is centered around the Z-axis, with the
 // screw in the positive and screw-head in the negative range.
@@ -68,6 +79,7 @@ module m3_screw(len=60, nut_at=-1, nut_channel=-1) {
   m3_dia=3.4;         // Let it a little loose to not overconstrain things.
   m3_head_dia=6;
   m3_head_len=3;
+  m3_nut_flat_dia=5.4 + 2*fit_tolerance;
   m3_nut_dia=5.4 / cos(30) + 2*fit_tolerance;  // /= cos(30) for circumcircle
   m3_nut_thick=2.8;
 
@@ -75,12 +87,8 @@ module m3_screw(len=60, nut_at=-1, nut_channel=-1) {
   translate([0, 0, -20+e]) cylinder(r=m3_head_dia/2, h=20);
   if (nut_at >= 0) {
     translate([0, 0, nut_at]) {
-      rotate([0, 0, 30]) cylinder(r=m3_nut_dia/2, h=m3_nut_thick, $fn=6);
-      nut_wide=m3_nut_dia * cos(30);
-      if (nut_channel > 0) {
-        nut_channel_len = max(nut_channel, m3_nut_dia/2);
-        translate([-nut_wide/2, -nut_channel_len, 0]) cube([nut_wide, nut_channel_len, m3_nut_thick]);
-      }
+      rotate([0, 0, -90]) hex_nut(flat_dia=m3_nut_flat_dia, h=m3_nut_thick,
+        channel_len=nut_channel);
     }
   }
 }
@@ -694,6 +702,43 @@ module motor_coupler() {
     translate([0, 0, -e]) cylinder(r=motor_axle/2, h=height+2*e);
     translate([0, -coupler_dia/2, engage_height+side_wall_clearance/2]) rotate([-90, 0, 0]) m3_screw(len=coupler_dia/2, nut_at=2.5, nut_channel=10);
   }
+}
+
+// 'Bearing' on the other side of the motor. With that, we essentiall just
+// use a threaded rod mounted pretty perpendicular to the frame. And for that
+// we need a wide diameter flat 'nut'.
+module motor_opposing_bearing() {
+  mount_dia=20;
+  big_height=side_wall_clearance - 4;
+
+  difference() {
+    union() {
+      cylinder(r=axle_dia/2 + 2, h=side_wall_clearance-rotation_clearance);
+      cylinder(r=mount_dia/2, h=big_height);
+    }
+    translate([0, 0, -e]) cylinder(r=axle_dia/2, h=side_wall_clearance+e);
+    translate([0, 0, (big_height-axle_hex_thick)/2])
+      hex_nut(axle_hex_flat_size, axle_hex_thick, channel_len=10);
+  }
+}
+
+module motor_opposing_bearing_nut() {
+  mount_dia=20;
+  thick=axle_hex_thick + 3;
+  difference() {
+    cylinder(r=mount_dia/2, h=thick);
+    translate([0, 0, -e]) cylinder(r=axle_dia/2, h=thick+2*e);
+    translate([0, 0, thick-axle_hex_thick]) hex_nut(axle_hex_flat_size, axle_hex_thick+e);
+    // 'finger tightening'
+    for (a = [0:120:360]) {
+      rotate([0, 0, a+30]) translate([mount_dia/2+5, 0, 3]) cylinder(r=8, h=thick+2*e);
+    }
+  }
+}
+
+module print_motor_bearing_parts() {
+  motor_opposing_bearing();
+  translate([21, 0, 0]) motor_opposing_bearing_nut();
 }
 
 full_assembly();
