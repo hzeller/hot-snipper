@@ -8,10 +8,13 @@
 
 // Port D
 #define BUTTON_BIT (1<<5)
-#define LED_BIT (1<<4)
+#define ENABLE_SENSE (1<<3)
 
 // Port B
-#define STEP_BIT (1<<4)
+#define STEP_BIT  (1<<4)
+#define LED_RED   (1<<0)
+#define LED_GREEN (1<<1)
+#define LED_BLUE  (1<<2)
 
 static constexpr int kFullCycle = 2;  // Each step is two delays for |¯|_|
 static constexpr int kMicroSteps = 8;
@@ -135,15 +138,21 @@ void send_steps(uint16_t steps) {
 }
 
 int main() {
-  DDRD = LED_BIT;
-  DDRB = STEP_BIT;
+  DDRB = STEP_BIT | LED_RED | LED_GREEN | LED_BLUE;
+  PORTB |= LED_RED | LED_GREEN | LED_BLUE;  // Negative logic.
 
   Button button;
   for (;;) {
     if (button.clicked()) {
-      PORTD |= LED_BIT;
-      send_steps(400);
-      PORTD &= ~LED_BIT;
+      if (PIND & ENABLE_SENSE) {  // Motor enable still off.
+        PORTB &= ~LED_RED;
+        _delay_ms(10);
+        PORTB |= LED_RED;
+      } else {
+        PORTB &= ~LED_GREEN;
+        send_steps(400);
+        PORTB |= LED_GREEN;
+      }
     }
   }
 }
