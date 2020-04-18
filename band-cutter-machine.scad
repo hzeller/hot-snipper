@@ -207,6 +207,7 @@ module wheel_stack(layers=stack, with_axle=false) {
   for (i = [0:1:layers-e]) {
     translate([0, 0, i*d]) wheel_assembly();
   }
+
   if (with_axle) {
     // TODO: add motor mount thing and counter-nut.
     translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=layers*band_thick+2*axle_extra);
@@ -492,7 +493,7 @@ module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
   }
 }
 
-module infeed_fancy_tray(wheel_stack=stack, extra=0) {
+module infeed_fancy_tray(s=stack, extra=0) {
   idler_r=idler_dia/2;
   tray_idler_distance=1;
   tray_idler_shift=5;
@@ -500,51 +501,51 @@ module infeed_fancy_tray(wheel_stack=stack, extra=0) {
   below=idler_r + infeed_tray_high + tray_idler_distance;
 
   translate([0, tray_idler_shift, -below])
-    infeed_tray(s=wheel_stack, len=tray_len, extra=extra);
+    infeed_tray(s=s, len=tray_len, extra=extra);
 
   // Snap lock
   translate([0, tray_idler_shift+7, -below])
     snap_lock(h=8, l=tray_len-7, do_punch = (extra > 0));
-  translate([wheel_stack*band_thick, tray_idler_shift+7, -below])
+  translate([s*band_thick, tray_idler_shift+7, -below])
     scale([-1, 1, 1]) snap_lock(h=8, l=tray_len-7, do_punch = (extra > 0));
 
   // hinge
   infeed_hinge(side_wall_clearance-2*rotation_clearance, rotation_clearance, tray_idler_distance, tray_idler_shift);
   // same, mirrored on other side.
-  translate([wheel_stack*band_thick, 0, 0]) scale([-1, 1, 1])
+  translate([s*band_thick, 0, 0]) scale([-1, 1, 1])
     infeed_hinge(side_wall_clearance-2*rotation_clearance, rotation_clearance, tray_idler_distance, tray_idler_shift);
 }
 
-module infeed_assembly(wheel_stack=2, correct_angle=0, extra=0, gravity_holes=false) {
+module infeed_assembly(s=stack, correct_angle=0, extra=0, gravity_holes=false) {
   idler_r=idler_dia/2;
   translate([-band_thick/2, 0, 0]) rotate([correct_angle, 0, 0]) {
-    rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true);
-    infeed_fancy_tray(wheel_stack, extra=extra);
+    rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true);
+    infeed_fancy_tray(s, extra=extra);
   }
 
   // this    v-- is fudging it. Somewhere else this offset is broken
   translate([-band_thick/2+0.5+band_separation/2,
              30,
              0.5])
-    rotate([0, 90, 0]) infeed_idler_stack(s=wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+    rotate([0, 90, 0]) infeed_idler_stack(s=s, with_axle=true, gravity_holes=gravity_holes);
 }
 
 // All the mechanics combined: wheel and idlers.
-module mechanics_assembly(wheel_stack=2, gravity_holes=false, extra=0) {
+module mechanics_assembly(s=2, gravity_holes=false, extra=0) {
   ia=-42;     // infeed angle
   id=radius+idler_dia/2+2; // infeed distance
   translate([0, cos(ia)*id, sin(ia)*id])
-    infeed_assembly(wheel_stack, 0, extra, gravity_holes=gravity_holes);
+    infeed_assembly(s, 0, extra, gravity_holes=gravity_holes);
 
   // Idlers around the knife
-  rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
-  rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(wheel_stack, with_axle=true, gravity_holes=gravity_holes);
+  rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true, gravity_holes=gravity_holes);
+  rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true, gravity_holes=gravity_holes);
 
   // Outfeed
-  rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") outfeed_stack(wheel_stack, extra=extra);
+  rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") outfeed_stack(s, extra=extra);
 
   // Wheel + knife. Animatable.
-  anim(wheel_stack);
+  anim(s);
 
   // Spacers to mount assembly together.
   for (h = mount_holes) {
