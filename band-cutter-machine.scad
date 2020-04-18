@@ -57,7 +57,7 @@ fit_tolerance=0.3;        // Tolerance of parts in contact.
 rotation_clearance=0.3;   // Similar for rotational
 
 infeed_tray_high=4;
-outfeed_offset=0.5;       // Wheel to outfeed wedge.
+outfeed_offset=0.6;       // Wheel to outfeed wedge.
 
 nema_cutout=false;   // should we have a central cut-out for the nema17?
 
@@ -203,11 +203,12 @@ module wheel_assembly(extra=0) {
 
 module wheel_stack(layers=stack, with_axle=false) {
   d=band_thick;
-  axle_extra=side_wall_clearance + 10;
+  axle_extra=side_wall_clearance+mount_panel_thickness + 5;
   for (i = [0:1:layers-e]) {
     translate([0, 0, i*d]) wheel_assembly();
   }
   if (with_axle) {
+    // TODO: add motor mount thing and counter-nut.
     translate([0, 0, -band_thick/2-axle_extra]) cylinder(r=axle_dia/2, h=layers*band_thick+2*axle_extra);
   }
 }
@@ -311,9 +312,10 @@ module wheel_idler_stack(s=stack, print_distance=-1, with_axle=false, gravity_ho
     }
   }
 
-  axle_extra=side_wall_clearance + 10;
+  // TODO: add retainer ring ?
+  axle_extra=side_wall_clearance + mount_panel_thickness + 5;
   if (with_axle) {
-    color("gray") translate([0, 0, -axle_extra]) cylinder(r=axle_display/2, h=s*d+2*axle_extra);
+    color("gray") translate([0, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
   }
 
   if (gravity_holes) {
@@ -334,7 +336,8 @@ module infeed_idler(outer=15, is_last=false) {
   }
 }
 
-module infeed_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes=false, outer=infeed_idler_dia/2) {
+module infeed_idler_stack(s=stack, print_distance=-1, with_axle=false,
+                          gravity_holes=false, outer=infeed_idler_dia/2) {
   d = band_thick;
   color("blue") for (i = [0:1:s-e]) {
     is_last= (i == s-1);
@@ -344,15 +347,21 @@ module infeed_idler_stack(s=5, print_distance=-1, with_axle=false, gravity_holes
       translate([i*print_distance, 0, 0]) infeed_idler(outer, is_last=is_last);
     }
   }
-  axle_extra=side_wall_clearance + 10;
-  if (with_axle) {
-    translate([0, 0, -axle_extra])
-      color("gray") cylinder(r=axle_display/2, h=s*d + 2*axle_extra);
-  }
-  if (gravity_holes) {
-    hull() {
-      translate([1, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
-      translate([-15, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+
+  // ΤODO: this still seems too short by a tiny amount on one side. Is there
+  // somewhere a fit-tolerance or something substracted ?
+  axle_extra=side_wall_clearance + mount_panel_thickness + 5;
+  translate([0, 0, -band_separation/2]) {
+    if (with_axle) {
+      translate([0, 0, -axle_extra])
+        color("gray") cylinder(r=axle_display/2, h=s*d + 2*axle_extra);
+    }
+
+    if (gravity_holes) {
+      hull() {
+        translate([1, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+        translate([-15, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+      }
     }
   }
 }
@@ -383,7 +392,7 @@ module outfeed_stack_material(s=3, extra=0) {
 
   slot_w=13;
   sw_r=4/2+extra;
-  sw=side_wall_clearance+4;
+  sw=side_wall_clearance+mount_panel_thickness;
 
   // Rounded slot mount
   translate([-d*s+d/2-sw, 0, 0]) hull() {
