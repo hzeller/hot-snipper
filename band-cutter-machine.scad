@@ -621,30 +621,34 @@ module mount_panel(thick=mount_panel_thickness, with_motor=true) {
   }
 }
 
-module hollow_cylinder(r=10, axle_r=8, h=10) {
+module hollow_cylinder(r=10, axle_r=8, h=10, with_brim=false) {
   difference() {
-    cylinder(r=r, h=h);
+    union() {
+      cylinder(r=r, h=h);
+      if (with_brim) cylinder(r=r+3, h=0.3);
+    }
     translate([0, 0, -e]) cylinder(r=axle_r, h=h+2*e);
   }
 }
 
-module stack_spacer(s=stack) {
+module stack_spacer(s=stack, with_brim=false) {
   total_width = stack * band_thick + 2*side_wall_clearance;
   color("azure", 0.25) hollow_cylinder(r=axle_dia/2+stack_spacer_wall,
                                        axle_r=axle_dia/2,
-                                       h=total_width);
+                                       h=total_width,
+                                       with_brim=with_brim);
 }
 
 
 // Useful outputting modules (TODO: should we add our own bottom support as
 // it is not possible right now to brim on just one part in prusa-slicer?)
-module print_stack_spacer() {
-  translate([0, 0, 0]) stack_spacer();
-  translate([15, 0, 0]) stack_spacer();
-  translate([30, 0, 0]) stack_spacer();
-  translate([0, 15, 0]) stack_spacer();
-  translate([15, 15, 0]) stack_spacer();
-  translate([30, 15, 0]) stack_spacer();
+module print_stack_spacer(with_brim=true) {
+  translate([0, 0, 0]) stack_spacer(with_brim=with_brim);
+  translate([15, 0, 0]) stack_spacer(with_brim=with_brim);
+  translate([30, 0, 0]) stack_spacer(with_brim=with_brim);
+  translate([0, 15, 0]) stack_spacer(with_brim=with_brim);
+  translate([15, 15, 0]) stack_spacer(with_brim=with_brim);
+  translate([30, 15, 0]) stack_spacer(with_brim=with_brim);
 }
 
 module print_wheel_idler(s=stack) {
@@ -685,16 +689,14 @@ module print_outfeed() {
   rotate([0, 180, 0]) outfeed_stack(stack);
 }
 
-// Distance rings. TODO: at some point, include that in the design, for
-// now we just add them as separate things to use.
 module print_sidewall_clearance_distance_rings() {
   outer=axle_dia+4;
   place_dist=outer+0.1;
   pack_offset_x=cos(60) * place_dist;
   pack_offset_y=sin(60) * place_dist;
   for (row = [0:1:2-e]) {
-    for (col = [0:1:4-e]) {
-      // We need two for the outer rollers
+    for (col = [0:1:3-e]) {
+      // We need two for the outer rollers, the others are for the top idlers.
       height = side_wall_clearance + ((col == 0) ? band_separation/2 : 0)
         - rotation_clearance;  // These are always used on rotating parts.
       translate([row*place_dist + ((col % 2 == 0) ? pack_offset_x : 0),
