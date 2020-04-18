@@ -57,7 +57,7 @@ fit_tolerance=0.3;        // Tolerance of parts in contact.
 rotation_clearance=0.3;   // Similar for rotational
 
 infeed_tray_high=4;
-outfeed_offset=0.6;       // Wheel to outfeed wedge.
+outfeed_offset=0.65;       // Wheel to outfeed wedge.
 
 nema_cutout=false;   // should we have a central cut-out for the nema17?
 
