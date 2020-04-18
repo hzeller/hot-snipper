@@ -120,6 +120,23 @@ module m3_screw(len=60, nut_at=-1, nut_channel=-1) {
   }
 }
 
+module retainer_clip(r=axle_dia/2, h=0.5) {
+  width=1.2;
+  gap=0.4;
+  color("#505050") translate([0, 0, -h/2]) difference() {
+    union() {
+      cylinder(r=r+width, h=h);
+      translate([-(3*width)/2, 0, 0]) cube([3*width, r+2*width, h]);
+    }
+    translate([0, 0, -e]) {
+      cylinder(r=r, h=h+2*e);
+      translate([-gap, 0, 0]) cube([2*gap, r+2*width+e, h+2*e]);
+      translate([+(width-gap/2), r+1.3*width, 0]) cylinder(r=0.5, h=h+2*e);
+      translate([-(width-gap/2), r+1.3*width, 0]) cylinder(r=0.5, h=h+2*e);
+    }
+  }
+}
+
 module mount_place(dia) {
   translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
 }
@@ -321,10 +338,12 @@ module wheel_idler_stack(s=stack, print_distance=-1, with_axle=false, gravity_ho
     }
   }
 
-  // TODO: add retainer ring ?
   axle_extra=side_wall_clearance + mount_panel_thickness + 5;
   if (with_axle) {
-    color("gray") translate([0, 0, -axle_extra]) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+    translate([0, 0, -axle_extra])
+      color("gray") cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+    translate([0, 0, -axle_extra+4]) retainer_clip();
+    translate([0, 0, s*d+axle_extra-4]) retainer_clip();
   }
 
   if (gravity_holes) {
@@ -364,6 +383,8 @@ module infeed_idler_stack(s=stack, print_distance=-1, with_axle=false,
     if (with_axle) {
       translate([0, 0, -axle_extra])
         color("gray") cylinder(r=axle_display/2, h=s*d + 2*axle_extra);
+      translate([0, 0, -axle_extra+4]) retainer_clip();
+      translate([0, 0, s*d+axle_extra-4]) retainer_clip();
     }
 
     if (gravity_holes) {
