@@ -6,7 +6,7 @@ ALL_TARGETS=fab/mount_panel.stl \
      fab/print_sidewall_clearance_distance_rings.stl \
      fab/print_nema_motor_stand.stl \
      fab/motor_coupler.stl fab/print_motor_bearing_parts.stl \
-     fab/mount_panel_2d.dxf
+     fab/laser_cut_mount_panel.dxf fab/laser_cut_knife_slider.dxf
 
 all: $(ALL_TARGETS)
 
@@ -22,7 +22,7 @@ fab/%.scad : band-cutter-machine.scad
 
 img/machine-render.png: fab/full_assembly.scad
 	openscad -o$@-tmp.png --imgsize=4096,4096 \
-             --camera=15.51,10.88,19.48,76,0,257,420 \
+             --camera=39,23,14,70,0,306,475 \
              --colorscheme=Nature $< \
          && cat $@-tmp.png | pngtopnm | pnmcrop | pnmscale 0.25 | pnmtopng > $@
 	rm -f $@-tmp.png

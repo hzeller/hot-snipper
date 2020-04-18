@@ -40,9 +40,13 @@ infeed_idler_dia=25;
 
 knife_movement=25;     // Total vertical movement
 
+stack_spacer_wall=1;   // od vs. id for stack spacer tubes.
+
 // the part engaging with the frame. This is multiple of 3mm as cut from
 // plywood.
-knife_slide_len=15;
+knife_slide_layers=5;
+knife_slide_layer_thick=3;
+knife_slide_len=knife_slide_layers * knife_slide_layer_thick;
 
 knife_slider_above_wire=30;
 knife_into_wheel=4;   // How deep we go into the slot. Mostly for animation
@@ -63,8 +67,8 @@ blade_l=4;
 
 mount_hole_flush_with_top_knife
   = radius - knife_into_wheel
-  + knife_slider_above_wire + knife_slide_len
-  - axle_dia/2 - 1;
+  + knife_slider_above_wire + (knife_slide_layers-1)*knife_slide_layer_thick
+  - axle_dia/2 - stack_spacer_wall;
 
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [36, -radius+10],
@@ -582,7 +586,8 @@ module hollow_cylinder(r=10, axle_r=8, h=10) {
 
 module stack_spacer(s=stack) {
   total_width = stack * band_thick + 2*side_wall_clearance;
-  color("azure", 0.25) hollow_cylinder(r=axle_dia/2+1, axle_r=axle_dia/2,
+  color("azure", 0.25) hollow_cylinder(r=axle_dia/2+stack_spacer_wall,
+                                       axle_r=axle_dia/2,
                                        h=total_width);
 }
 
@@ -590,10 +595,12 @@ module stack_spacer(s=stack) {
 // Useful outputting modules (TODO: should we add our own bottom support as
 // it is not possible right now to brim on just one part in prusa-slicer?)
 module print_stack_spacer() {
-  stack_spacer();
+  translate([0, 0, 0]) stack_spacer();
   translate([15, 0, 0]) stack_spacer();
+  translate([30, 0, 0]) stack_spacer();
   translate([0, 15, 0]) stack_spacer();
   translate([15, 15, 0]) stack_spacer();
+  translate([30, 15, 0]) stack_spacer();
 }
 
 module print_wheel_idler(s=stack) {
@@ -610,10 +617,19 @@ module print_infeed_weight_idler(s=stack) {
   infeed_idler_stack(s=s, print_distance=infeed_idler_dia+1);
 }
 
-module mount_panel_2d() {
+module laser_cut_mount_panel() {
   projection(cut=true) {
     translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel();
   }
+}
+
+module laser_cut_knife_slider() {
+  dist=12;
+  for (i = [0:1:knife_slide_layers-1-e]) {
+    translate([0, i*dist, 0]) projection(cut=true) knife_slider_layer(s=stack);
+  }
+  translate([0, -dist-10, 0]) projection(cut=true)
+    knife_slider_layer(s=stack, is_top=true);
 }
 
 module print_outfeed() {
@@ -757,23 +773,35 @@ module print_motor_bearing_parts() {
   translate([21, 0, 0]) motor_opposing_bearing_nut();
 }
 
-// This is to be cut out of three layers of 3mm plywood. The rods get slightly
-// warm, which might soften over time 3D printed plastic.
-module knife_slider(s=stack) {
+module knife_slider_layer(s=stack, is_top=false) {
   nut_dia=11;
+  bar_wide=nut_dia + (is_top ? 20 : 0);
   inner_hole=4.5;
   poke_out=3 + 2; // thickness of frame plus extra
   poke_w=knife_slider_slot_w - fit_tolerance;
-  shoulder_w=nut_dia;
   inner_length=side_wall_clearance*2+s*band_thick - 2*fit_tolerance;
 
-  translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_len/2]) difference() {
+  translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_layer_thick/2]) difference() {
     union() {
-      cube([inner_length, nut_dia, knife_slide_len], center=true);
-      cube([inner_length+2*poke_out, poke_w, knife_slide_len], center=true);
+      cube([inner_length, bar_wide, knife_slide_layer_thick], center=true);
+
+      hull() {
+        translate([-(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2]) cylinder(r=poke_w/2, h=knife_slide_layer_thick);
+        translate([+(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2]) cylinder(r=poke_w/2, h=knife_slide_layer_thick);
+      }
     }
-    translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_len/2-e]) cylinder(r=inner_hole/2, h=knife_slide_len+2*e);
-    translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_len/2-e]) cylinder(r=inner_hole/2, h=knife_slide_len+2*e);
+    translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=inner_hole/2, h=knife_slide_layer_thick+2*e);
+    translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=inner_hole/2, h=knife_slide_layer_thick+2*e);
+  }
+}
+
+// This is to be cut out of three layers of 3mm plywood. The rods get slightly
+// warm, which might soften over time 3D printed plastic.
+module knife_slider(s=stack) {
+  for (i = [0:1:knife_slide_layers-e]) {
+    color(i % 2 == 0 ? "#d8c0a3" : "#c9a77e")  // 'wood' layers
+    translate([0, 0, i*knife_slide_layer_thick])
+      knife_slider_layer(s, is_top = (i==knife_slide_layers-1));
   }
 }
 
