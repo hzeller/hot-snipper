@@ -35,7 +35,7 @@ is changed, a machine that can cut up to 5 bands in parallel can can fit on
 a Prusa MK3 bed.
 Change the value, then
 
-```
+```bash
 make     # to build the new artifacts
 cd fab/  # because prusa-slicer 3MF does not handle relative paths...
 prusa-slicer band-cutter-machine.3mf
