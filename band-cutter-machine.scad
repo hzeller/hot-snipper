@@ -203,7 +203,7 @@ module wheel_assembly(extra=0) {
 
 module wheel_stack(layers=stack, with_axle=false) {
   d=band_thick;
-  axle_extra=side_wall_clearance+mount_panel_thickness + 5;
+  axle_extra=side_wall_clearance+mount_panel_thickness + 10;
   for (i = [0:1:layers-e]) {
     translate([0, 0, i*d]) wheel_assembly();
   }
@@ -259,7 +259,15 @@ module anim(s=4) {
     knife_anim_fraction=(t < 0.6) ? t/0.6 : 0;
     wheel_anim_fraction = (t > 0.6) ? (t-0.6)/0.4 : 0;
 
-    rotate([180 + wheel_anim_fraction*720, 0, 0]) rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
+    anim_rot_angle=180+wheel_anim_fraction*720;
+    rotate([anim_rot_angle, 0, 0]) {
+      rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
+
+      translate([-band_thick/2+stack*band_thick
+                 +side_wall_clearance
+                 -rotation_clearance, 0, 0])
+        rotate([0, -90, 0]) motor_coupler();
+    }
 
     down=sin(knife_anim_fraction*180) * knife_movement;
     translate([0, 0, radius + knife_movement - knife_into_wheel - down])
@@ -583,7 +591,7 @@ module mount_panel(thick=mount_panel_thickness, with_motor=true) {
     // Knife slide
     knife_track_punch(wall_thick=thick);
 
-    axle_extra=side_wall_clearance + 10;
+    axle_extra=side_wall_clearance + mount_panel_thickness + 5;
     for (h = mount_holes) {
       translate([0, h[0], h[1]]) rotate([0, 90, 0])
         translate([0, 0, -band_thick/2-axle_extra])
@@ -672,14 +680,27 @@ module print_sidewall_clearance_distance_rings() {
 
 module full_assembly() {
   mechanics_assembly(stack);
-  mount_panel(thick=mount_panel_thickness);
-  // The other side has the motor mount.
-  translate([stack*band_thick + 2*side_wall_clearance+mount_panel_thickness, 0, 0]) mount_panel(thick=mount_panel_thickness, with_motor=true);
 
   // Motor mounted on side.
   translate([stack*band_thick - band_thick/2   // We mount motor on other side
              + side_wall_clearance
              + mount_panel_thickness, 0, 0]) nema_motor_stand();
+
+  // The floating axle holder on the other side, holding onto that frame
+  // perpendicularly with nuts.
+  translate([-band_thick/2
+             -side_wall_clearance
+             -mount_panel_thickness, 0, 0]) rotate([0, -90, 0]) motor_opposing_bearing_nut();
+  translate([-band_thick/2
+             -side_wall_clearance,
+              0, 0]) rotate([0, 90, 0]) motor_opposing_bearing();
+
+  // Panel sides. We need to put them last, so that they are transparent to
+  // all the things we add above. Weird OpenSCAD thing ?
+  mount_panel(thick=mount_panel_thickness);
+  // The other side has the motor mount.
+  translate([stack*band_thick + 2*side_wall_clearance+mount_panel_thickness, 0, 0]) mount_panel(thick=mount_panel_thickness, with_motor=true);
+
 }
 
 module pcb_rails(outer_w=40, inner_w=30, len=30) {
@@ -744,7 +765,7 @@ module motor_coupler() {
   height=side_wall_clearance - rotation_clearance + engage_height;
   coupler_dia=16;
 
-  translate([0, 0, height]) rotate([0, 180, 0]) difference() {
+  color("yellow") translate([0, 0, height]) rotate([0, 180, 0]) difference() {
     cylinder(r=coupler_dia/2, h=height);
     translate([0, 0, -band_thick/2+engage_height])
       wheel_assembly(extra=fit_tolerance);
@@ -760,7 +781,7 @@ module motor_opposing_bearing() {
   mount_dia=20;
   big_height=side_wall_clearance - 4;
 
-  difference() {
+  color("red") difference() {
     union() {
       cylinder(r=axle_dia/2 + 2, h=side_wall_clearance-rotation_clearance);
       cylinder(r=mount_dia/2, h=big_height);
@@ -774,7 +795,7 @@ module motor_opposing_bearing() {
 module motor_opposing_bearing_nut() {
   mount_dia=20;
   thick=axle_hex_thick + 3;
-  difference() {
+  color("red") difference() {
     cylinder(r=mount_dia/2, h=thick);
     translate([0, 0, -e]) cylinder(r=axle_dia/2, h=thick+2*e);
     translate([0, 0, thick-axle_hex_thick]) hex_nut(axle_hex_flat_size, axle_hex_thick+e);
