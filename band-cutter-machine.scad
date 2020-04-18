@@ -40,13 +40,14 @@ infeed_idler_dia=25;
 
 knife_movement=25;     // Total vertical movement
 
-stack_spacer_wall=1;   // od vs. id for stack spacer tubes.
+stack_spacer_wall=1.5;   // od vs. id for stack spacer tubes.
 
 // the part engaging with the frame. This is multiple of 3mm as cut from
 // plywood.
 knife_slide_layers=5;
 knife_slide_layer_thick=3;
 knife_slide_len=knife_slide_layers * knife_slide_layer_thick;
+knife_slide_rod_hole=4.5;   // The diameter threaded rod holding the wire.
 
 knife_slider_above_wire=30;
 knife_into_wheel=4;   // How deep we go into the slot. Mostly for animation
@@ -56,9 +57,11 @@ fit_tolerance=0.3;        // Tolerance of parts in contact.
 rotation_clearance=0.3;   // Similar for rotational
 
 infeed_tray_high=4;
-outfeed_offset=0.5;
+outfeed_offset=0.5;       // Wheel to outfeed wedge.
 
 nema_cutout=false;   // should we have a central cut-out for the nema17?
+
+mount_panel_thickness=3;  // thickness of material for the frame, e.g. acrylic.
 
 // Blades engaging with the button-holes
 blade_h=3.5;
@@ -72,9 +75,15 @@ mount_hole_flush_with_top_knife
 
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [36, -radius+10],
-               [-28, radius+5], [36, radius+5],
+               [-28, radius+idler_dia], [36, radius+idler_dia],
+               // We want the knife handle be stopped by the mounting bars.
                [12, mount_hole_flush_with_top_knife],
                [-12, mount_hole_flush_with_top_knife]];
+
+mount_panel_corners = [[-39, -radius - 6],         // bottom, out-feed side
+                       [-39, 0], [-30, +radius+idler_dia], // up out-feed side.
+                       [-5, +radius+80], [+5, +radius+80], // summit
+                       [62, 0], [62, -radius - 6]];  // down, in-feed
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
@@ -548,16 +557,12 @@ module nema17_punch(h=50) {
   if (nema_cutout) cylinder(r=22.5/2, h=h);
 }
 
-module mount_panel(thick=2, with_motor=true) {
+module mount_panel(thick=mount_panel_thickness, with_motor=true) {
   s=1;
-  mount_panel_corners = [[-39, -radius - 6],  // bottom, out-feed side
-                         [-39, -7], [-30, +radius+5],      // up out-feed side.
-                         [-5, +radius+80], [+5, +radius+80], // summit
-                         [62, 0], [62, -radius - 6]];  // down, in-feed
-
-
   color("azure", 0.1) difference() {
-    translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) hull() {
+    translate([-band_thick/2
+               -side_wall_clearance
+               -mount_panel_thickness/2, 0, 0]) hull() {
       for (c = mount_panel_corners) {
         translate([0, c[0], c[1]]) panel_corner(thick=thick);
       }
@@ -656,13 +661,15 @@ module print_sidewall_clearance_distance_rings() {
 }
 
 module full_assembly() {
-  panel_thickness=3;
   mechanics_assembly(stack);
-  mount_panel(thick=panel_thickness);
+  mount_panel(thick=mount_panel_thickness);
   // The other side has the motor mount.
-  translate([stack*band_thick + 2*side_wall_clearance+3, 0, 0]) mount_panel(thick=panel_thickness, with_motor=true);
+  translate([stack*band_thick + 2*side_wall_clearance+mount_panel_thickness, 0, 0]) mount_panel(thick=mount_panel_thickness, with_motor=true);
 
-  translate([stack*band_thick - band_thick/2 + side_wall_clearance+panel_thickness, 0, 0]) nema_motor_stand();
+  // Motor mounted on side.
+  translate([stack*band_thick - band_thick/2   // We mount motor on other side
+             + side_wall_clearance
+             + mount_panel_thickness, 0, 0]) nema_motor_stand();
 }
 
 module pcb_rails(outer_w=40, inner_w=30, len=30) {
@@ -775,9 +782,9 @@ module print_motor_bearing_parts() {
 
 module knife_slider_layer(s=stack, is_top=false) {
   nut_dia=11;
+  hook_hole=0.7;  // hole to mount a hook for the spring-action.
   bar_wide=nut_dia + (is_top ? 20 : 0);
-  inner_hole=4.5;
-  poke_out=3 + 2; // thickness of frame plus extra
+  poke_out=mount_panel_thickness + 4; // extra to mount spring-ring
   poke_w=knife_slider_slot_w - fit_tolerance;
   inner_length=side_wall_clearance*2+s*band_thick - 2*fit_tolerance;
 
@@ -790,8 +797,13 @@ module knife_slider_layer(s=stack, is_top=false) {
         translate([+(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2]) cylinder(r=poke_w/2, h=knife_slide_layer_thick);
       }
     }
-    translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=inner_hole/2, h=knife_slide_layer_thick+2*e);
-    translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=inner_hole/2, h=knife_slide_layer_thick+2*e);
+
+    // Holes for the rods
+    translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=knife_slide_rod_hole/2, h=knife_slide_layer_thick+2*e);
+    translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=knife_slide_rod_hole/2, h=knife_slide_layer_thick+2*e);
+
+    translate([-(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2-e]) cylinder(r=hook_hole/2, h=knife_slide_layer_thick+2*e);
+    translate([+(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2-e]) cylinder(r=hook_hole/2, h=knife_slide_layer_thick+2*e);
   }
 }
 
