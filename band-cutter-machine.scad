@@ -661,10 +661,15 @@ module print_infeed_weight_idler(s=stack) {
   infeed_idler_stack(s=s, print_distance=infeed_idler_dia+1);
 }
 
-module laser_cut_mount_panel() {
+module mount_panel_projection(with_motor=false) {
   projection(cut=true) {
-    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel();
+    translate([0, 0, -side_wall_clearance-band_thick/2-1.5]) rotate([0, 90, 0]) mount_panel(with_motor=with_motor);
   }
+}
+
+module laser_cut_mount_panel() {
+  mount_panel_projection(with_motor=true);
+  translate([75, 100, 0]) rotate([0, 0, 180]) mount_panel_projection();
 }
 
 module laser_cut_knife_slider() {

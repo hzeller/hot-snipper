@@ -19,10 +19,15 @@ This machine is for that, a hot knife (really at this point: hot wire) cutter
 that allows to cut multiple parallel bands at once.
 
 ## Manufacturing
-Most items can be entirely 3D printed. The provided fab/band-cutter-machine.3mf
-file contains a print layout that provides all the parts needed to print a
-machine that can cut two bands in parallel.
+Most items can be entirely 3D printed, the side panels and wooden handle
+is laser cut. To generate manufacturing outputs with OpenSCAD, type `make`.
 
+### 3D printing
+The provided fab/band-cutter-machine.3mf file contains a print layout that
+provides all the parts needed to print a machine that can cut two bands in
+parallel (**Note, 3mf currently out of date, need to re-add more things**)
+
+#### Changing parallel bands
 If the `stack` parameter in the [SCAD file](./band-cutter-machine.scad#L7)
 is changed, a machine that can cut up to 5 bands in parallel can can fit on
 a Prusa MK3 bed.
@@ -31,29 +36,44 @@ Open `band-cutter-machine.3mf` with prusa-slicer and reload with `F5`. There
 seems to be a bug in prusa-slicer which then slightly mis-aligns the cylinder
 support enforcer around the main wheel; adjust that first before slicing.
 
- two bands                          | five bands
-------------------------------------|------------------------------------
-![](img/two-band-machine-slice.png) | ![](img/five-band-machine-slice.png)
+The side-panels take a lot of time to print, so we laser-cut these (but
+you can also print `fab/mount_panel.stl` if in a pinch and don't have access
+to a laser cutter).
 
-The side-panels take a lot of time to print, so if there is a laser cutter
-available, the Makefile will also generate `fab/mount_panel_2d.dxf` for
-lasercutting the panel.
+### Laser Cutting
+
+There are two files, provided as DXF format that need to be laser-cut.
+
+  * `fab/laser_cut_knife_slider.dxf` Needs to be cut from 3mm plywood.
+  * `fab/laser_cut_mount_panel.dxf` can be wood, but ideally transparent
+    acrylic to inspect the inside of the machine.
+
+ Knife Slider (pretty small)        | Mount Panel (much larger)
+------------------------------------|------------------------------------
+![](img/laser_cut_knife_slider.png) | ![](img/laser_cut_mount_panel.png)
 
 ## Assembly
 
 Parts fit together pretty straightforward, check out the rendering and
-picture below.
+picture below. Note that the spacing tubes for the axles come in two sizes:
+the ones around the in-feed idler with the big wheels are slightly longer than
+the other idler axes.
 
 As 'axles', I am using easy-to-get threaded rods, cut to length (whatever
 is easy to get; 6mm or 1/4").
 All of these should be held in place by retaining rings (I don't have any
 right now, so this is why it is temporarily using nuts).
 
-The center wheel drive: work in progress. Plan is to have a stepper motor
-here, but maybe initially just a hand-crank.
+The center wheel is driven by a stepper motor, mounted on one side of the
+panel. There is a meshing coupler that drives the wheel. Since the motor
+axle is not long enough to go all the way through the machine, there is a
+floating axle on the opposing side that is mounted firmly perpendicular to
+the panel with flat nuts with a large surface.
 
-Hot Knife: Work in progress. The slot in which it is sliding is already part
-of the side-panel, but that might change.
+The hot wire is mounted between two threaded rods (#8, about 4.2mm), held
+apart by a wooden block made up of a couple of layers laser-cut plywood. That
+way, that part does not soften over time near the rods that get warm in
+operation.
 
  Render                     | Assembled
 ----------------------------|-----------------------
