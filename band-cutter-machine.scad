@@ -38,8 +38,14 @@ idler_dia=16;
 idler_cutout=4;
 infeed_idler_dia=25;
 
-knife_movement=20;
-knife_into_wheel=2;   // How deep we go into the slot. Mostly for animation
+knife_movement=25;     // Total vertical movement
+
+// the part engaging with the frame. This is multiple of 3mm as cut from
+// plywood.
+knife_slide_len=15;
+
+knife_slider_above_wire=30;
+knife_into_wheel=4;   // How deep we go into the slot. Mostly for animation
 knife_slider_slot_w=4;
 
 fit_tolerance=0.3;        // Tolerance of parts in contact.
@@ -55,9 +61,16 @@ blade_h=3.5;
 blade_w=0.7;
 blade_l=4;
 
+mount_hole_flush_with_top_knife
+  = radius - knife_into_wheel
+  + knife_slider_above_wire + knife_slide_len
+  - axle_dia/2 - 1;
+
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [36, -radius+10],
-	       [30, radius+5],   [-28, radius+5]];
+               [-28, radius+5], [36, radius+5],
+               [12, mount_hole_flush_with_top_knife],
+               [-12, mount_hole_flush_with_top_knife]];
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
@@ -198,40 +211,42 @@ module knife(s=stack) {
 
     translate([-side_wall_clearance/2, 0, 0]) {
       cylinder(r=4.5/2, h=50);  // rod
-      translate([0, 0, knife_movement]) rotate([0, -90, 0]) cylinder(r=knife_slider_slot_w/2, h=side_wall_clearance/2+5);
       color(glow) cylinder(r=5/2, h=1);
     }
     translate([s*d+side_wall_clearance/2, 0, 0]) {
       cylinder(r=4.5/2, h=50);
-      translate([0, 0, knife_movement]) rotate([0, 90, 0]) cylinder(r=knife_slider_slot_w/2, h=side_wall_clearance/2+5);
       color(glow) cylinder(r=5/2, h=1);
     }
-
+    translate([0, 0, knife_slider_above_wire]) knife_slider();
   }
 }
 
-module knife_punch(wall_thick=3) {
+module knife_track_punch(wall_thick=3) {
   // TODO: this should be going all through.
   // Also, what is up with that 1.5 value, that should be derived from
   // something.
   translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) union() {
-    above=18;
+    start=-knife_into_wheel+knife_slider_above_wire;
+    end=start + knife_movement + knife_slide_len;
     slot_r=knife_slider_slot_w/2;
     hull() {
-      translate([0, 0, radius + above]) panel_corner(r=slot_r, thick=wall_thick+2*e);
-      translate([0, 0, radius + above+knife_movement]) panel_corner(r=slot_r, thick=wall_thick+2*e);
+      translate([0, 0, radius + start]) panel_corner(r=slot_r, thick=wall_thick+2*e);
+      translate([0, 0, radius + end]) panel_corner(r=slot_r, thick=wall_thick+2*e);
     }
     // top screw to hold spring
-    translate([0, 0, radius + above+30]) panel_corner(r=3.2/2, thick=wall_thick+2*e);
+    translate([0, 0, radius + end+10]) panel_corner(r=3.2/2, thick=wall_thick+2*e);
   }
 }
 
 module anim(s=4) {
   t=$t;
   rotate([0, 0, 0]) {
-    rotate([180 + ((t < 0.8) ? (t/0.8) * 720 : 0), 0, 0]) rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
-    knife_anim_stage=(t > 0.8) ? (t-0.8)/0.2 : 0;
-    down=sin(knife_anim_stage*180) * knife_movement;
+    knife_anim_fraction=(t < 0.6) ? t/0.6 : 0;
+    wheel_anim_fraction = (t > 0.6) ? (t-0.6)/0.4 : 0;
+
+    rotate([180 + wheel_anim_fraction*720, 0, 0]) rotate([0, 90, 0]) wheel_stack(s, with_axle=true);
+
+    down=sin(knife_anim_fraction*180) * knife_movement;
     translate([0, 0, radius + knife_movement - knife_into_wheel - down])
       knife(s);
   }
@@ -533,7 +548,7 @@ module mount_panel(thick=2, with_motor=true) {
   s=1;
   mount_panel_corners = [[-39, -radius - 6],  // bottom, out-feed side
                          [-39, -7], [-30, +radius+5],      // up out-feed side.
-                         [-5, +radius+50], [+5, +radius+50], // summit
+                         [-5, +radius+80], [+5, +radius+80], // summit
                          [62, 0], [62, -radius - 6]];  // down, in-feed
 
 
@@ -547,7 +562,7 @@ module mount_panel(thick=2, with_motor=true) {
     if (with_motor) rotate([0, -90, 0]) nema17_punch();
 
     // Knife slide
-    knife_punch(wall_thick=thick);
+    knife_track_punch(wall_thick=thick);
 
     axle_extra=side_wall_clearance + 10;
     for (h = mount_holes) {
@@ -740,6 +755,26 @@ module motor_opposing_bearing_nut() {
 module print_motor_bearing_parts() {
   motor_opposing_bearing();
   translate([21, 0, 0]) motor_opposing_bearing_nut();
+}
+
+// This is to be cut out of three layers of 3mm plywood. The rods get slightly
+// warm, which might soften over time 3D printed plastic.
+module knife_slider(s=stack) {
+  nut_dia=11;
+  inner_hole=4.5;
+  poke_out=3 + 2; // thickness of frame plus extra
+  poke_w=knife_slider_slot_w - fit_tolerance;
+  shoulder_w=nut_dia;
+  inner_length=side_wall_clearance*2+s*band_thick - 2*fit_tolerance;
+
+  translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_len/2]) difference() {
+    union() {
+      cube([inner_length, nut_dia, knife_slide_len], center=true);
+      cube([inner_length+2*poke_out, poke_w, knife_slide_len], center=true);
+    }
+    translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_len/2-e]) cylinder(r=inner_hole/2, h=knife_slide_len+2*e);
+    translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_len/2-e]) cylinder(r=inner_hole/2, h=knife_slide_len+2*e);
+  }
 }
 
 full_assembly();
