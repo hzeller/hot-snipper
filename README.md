@@ -18,6 +18,8 @@ adapted with the parametric CAD model.
 This machine is for that, a hot knife (really at this point: hot wire) cutter
 that allows to cut multiple parallel bands at once.
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/dfniXM3w2Yc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ## Manufacturing
 Most items can be entirely 3D printed, the side panels and wooden handle
 is laser cut. To generate manufacturing outputs with OpenSCAD, type `make`.
