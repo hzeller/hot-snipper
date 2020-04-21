@@ -236,18 +236,28 @@ module wheel_stack(layers=stack, with_axle=false) {
 //  * the connecting columns are some threaded rod.
 module knife(s=stack) {
   d=band_thick;
+  nd=8;   // nut dia
+  nh=2.5; // nut height
   glow="orange";
   translate([-d/2, -0, 0]) {
     translate([-side_wall_clearance/2, 0, 0]) rotate([0, 90, 0]) color(glow)
       cylinder(r=0.5, h=s*d+side_wall_clearance);  // 'wire'
 
     translate([-side_wall_clearance/2, 0, 0]) {
-      cylinder(r=4.5/2, h=50);  // rod
+      translate([0, 0, -3]) cylinder(r=4.5/2, h=60);  // rod
       color(glow) cylinder(r=5/2, h=1);
+      translate([0, 0, knife_slider_above_wire-nh]) hex_nut(flat_dia=nd, h=nh);
+      translate([0, 0, knife_slider_above_wire-2*nh]) rotate([0, 0, 17]) hex_nut(flat_dia=nd, h=nh); // counter nut.
+      translate([0, 0, knife_slider_above_wire+knife_slide_len]) hex_nut(flat_dia=nd, h=nh);
+      translate([0, 0, knife_slider_above_wire+knife_slide_len+nh]) rotate([0, 0, 28]) hex_nut(flat_dia=nd, h=nh);
     }
     translate([s*d+side_wall_clearance/2, 0, 0]) {
-      cylinder(r=4.5/2, h=50);
+      translate([0, 0, -3]) cylinder(r=4.5/2, h=60);
       color(glow) cylinder(r=5/2, h=1);
+      translate([0, 0, knife_slider_above_wire-nh]) hex_nut(flat_dia=nd, h=nh);
+      translate([0, 0, knife_slider_above_wire-2*nh]) rotate([0, 0, 38]) hex_nut(flat_dia=nd, h=nh); // counter nut.
+      translate([0, 0, knife_slider_above_wire+knife_slide_len]) hex_nut(flat_dia=nd, h=nh);
+      translate([0, 0, knife_slider_above_wire+knife_slide_len+nh]) rotate([0, 0, 19]) hex_nut(flat_dia=nd, h=nh);
     }
     translate([0, 0, knife_slider_above_wire]) knife_slider();
   }
