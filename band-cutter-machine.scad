@@ -44,45 +44,54 @@ stack_spacer_wall=1.5;   // od vs. id for stack spacer tubes.
 
 // the part engaging with the frame. This is multiple of 3mm as cut from
 // plywood.
-knife_slide_layers=5;
+knife_slide_layers=7;
+knife_slide_top_layers=3;
 knife_slide_layer_thick=3;
 knife_slide_len=knife_slide_layers * knife_slide_layer_thick;
-knife_slide_rod_hole=4.5;   // The diameter threaded rod holding the wire.
+knife_slide_top_len=knife_slide_top_layers * knife_slide_layer_thick;
+knife_slide_rod_hole=4.3;   // The diameter threaded rod holding the wire.
 
 knife_slider_above_wire=30;
 knife_into_wheel=4;   // How deep we go into the slot. Mostly for animation
-knife_slider_slot_w=4;
+knife_slider_slot_w=20;
 
-fit_tolerance=0.3;        // Tolerance of parts in contact.
-rotation_clearance=0.3;   // Similar for rotational
+fit_tolerance=0.3;                 // Tolerance of parts in contact.
+slide_tolerance=fit_tolerance;     // Tolerance of parts sliding
+rotation_clearance=fit_tolerance;  // Similar for rotational
 
 infeed_tray_high=4;
 outfeed_offset=0.65;       // Wheel to outfeed wedge.
 
 nema_cutout=false;   // should we have a central cut-out for the nema17?
 
-mount_panel_thickness=3;  // thickness of material for the frame, e.g. acrylic.
+mount_panel_thickness=6;  // thickness of material for the frame, e.g. acrylic.
+mount_panel_corner_r=6;
 
 // Blades engaging with the button-holes
 blade_h=3.5;
 blade_w=0.7;
 blade_l=4;
 
-mount_hole_flush_with_top_knife
+top_knife_pos
   = radius - knife_into_wheel
-  + knife_slider_above_wire + (knife_slide_layers-1)*knife_slide_layer_thick
-  - axle_dia/2 - stack_spacer_wall;
+  + knife_slider_above_wire + (knife_slide_layers-knife_slide_top_layers)*knife_slide_layer_thick;
+
+mount_hole_flush_with_top_knife
+  = top_knife_pos - axle_dia/2-stack_spacer_wall
+  - 2.5;  // To accomodate washer and nut.
+panel_corner_flush_with_top_knife = top_knife_pos - mount_panel_corner_r;
 
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [[-30, -radius-3], [36, -radius+10],
-               [-28, radius+idler_dia], [36, radius+idler_dia],
+               [36, radius],
                // We want the knife handle be stopped by the mounting bars.
                [12, mount_hole_flush_with_top_knife],
                [-12, mount_hole_flush_with_top_knife]];
 
 mount_panel_corners = [[-39, -radius - 6],         // bottom, out-feed side
-                       [-39, 0], [-30, +radius+idler_dia], // up out-feed side.
-                       [-5, +radius+80], [+5, +radius+80], // summit
+                       [-39, 0], //[-30, +radius+idler_dia], // up out-feed side.
+                       [-12, panel_corner_flush_with_top_knife],
+                       [+12, panel_corner_flush_with_top_knife], // summit
                        [62, 0], [62, -radius - 6]];  // down, in-feed
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
@@ -90,7 +99,7 @@ echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*
 // Model a hex nut with the distance between the flat faces of flat_dia.
 // If channel_len is given, provides a sideways channel.
 module hex_nut(flat_dia, h, channel_len=-1) {
-  cylinder(r=flat_dia / cos(30) / 2, h=h, $fn=6);
+  color("silver") cylinder(r=flat_dia / cos(30) / 2, h=h, $fn=6);
   if (channel_len > 0) {
     translate([0, -flat_dia/2, 0]) cube([channel_len, flat_dia, h]);
   }
@@ -264,19 +273,12 @@ module knife(s=stack) {
 }
 
 module knife_track_punch(wall_thick=3) {
-  // TODO: this should be going all through.
-  // Also, what is up with that 1.5 value, that should be derived from
-  // something.
-  translate([-band_thick/2-1.5-side_wall_clearance, 0, 0]) union() {
-    start=-knife_into_wheel+knife_slider_above_wire;
-    end=start + knife_movement + knife_slide_len;
-    slot_r=knife_slider_slot_w/2;
-    hull() {
-      translate([0, 0, radius + start]) panel_corner(r=slot_r, thick=wall_thick+2*e);
-      translate([0, 0, radius + end]) panel_corner(r=slot_r, thick=wall_thick+2*e);
-    }
+  translate([-band_thick/2-wall_thick/2-side_wall_clearance, 0, 0]) union() {
+    // TODO: move these to panel thing.
+    spring_mount = 4;
+    top = top_knife_pos+knife_movement+knife_slide_top_len+spring_mount;
     // top screw to hold spring
-    translate([0, 0, radius + end+10]) panel_corner(r=3.2/2, thick=wall_thick+2*e);
+    translate([0, 0, top]) panel_corner(r=3.2/2, thick=wall_thick+2*e);
   }
 }
 
@@ -594,7 +596,7 @@ module mechanics_assembly(s=2, gravity_holes=false, extra=0) {
   }
 }
 
-module panel_corner(r=6, thick=3) {
+module panel_corner(r=mount_panel_corner_r, thick=3) {
   rotate([0, 90, 0]) translate([0, 0, -thick/2]) cylinder(r=r, h=thick);
 }
 
@@ -611,9 +613,22 @@ module mount_panel(thick=mount_panel_thickness, with_motor=true) {
   color("azure", 0.1) difference() {
     translate([-band_thick/2
                -side_wall_clearance
-               -mount_panel_thickness/2, 0, 0]) hull() {
-      for (c = mount_panel_corners) {
-        translate([0, c[0], c[1]]) panel_corner(thick=thick);
+               -mount_panel_thickness/2, 0, 0]) {
+      // The main body
+      hull() {
+        for (c = mount_panel_corners) {
+          translate([0, c[0], c[1]]) panel_corner(thick=thick);
+        }
+      }
+
+      // The top knife slider 'blade'
+      hull() {
+        slot_half=knife_slider_slot_w/2;
+        top=top_knife_pos;
+        spring_mount = 4;
+        translate([-thick/2, -knife_slider_slot_w/2, top-e]) cube([thick, knife_slider_slot_w, e]);
+        translate([0, -(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
+        translate([0, +(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
       }
     }
     mechanics_assembly(s, gravity_holes=true, extra=0.15);
@@ -683,16 +698,18 @@ module mount_panel_projection(with_motor=false) {
 
 module laser_cut_mount_panel() {
   mount_panel_projection(with_motor=true);
-  translate([75, 100, 0]) rotate([0, 0, 180]) mount_panel_projection();
+  translate([70, 80, 0]) rotate([0, 0, 180]) mount_panel_projection();
 }
 
 module laser_cut_knife_slider() {
   dist=12;
-  for (i = [0:1:knife_slide_layers-1-e]) {
+  for (i = [0:1:knife_slide_layers-knife_slide_top_layers-e]) {
     translate([0, i*dist, 0]) projection(cut=true) knife_slider_layer(s=stack);
   }
-  translate([0, -dist-10, 0]) projection(cut=true)
-    knife_slider_layer(s=stack, is_top=true);
+  for (i = [0:1:knife_slide_top_layers-e]) {
+    translate([0, -i*(dist+19)-22, 0]) projection(cut=true)
+      knife_slider_layer(s=stack, is_top=true);
+  }
 }
 
 module print_outfeed() {
@@ -728,7 +745,7 @@ module full_assembly() {
   // perpendicularly with nuts.
   translate([-band_thick/2
              -side_wall_clearance
-             -mount_panel_thickness, 0, 0]) rotate([0, -90, 0]) motor_opposing_bearing_nut();
+             -mount_panel_thickness, 0, 0]) rotate([0, -90, 0]) motor_opposing_bearing_nut(show_nut=true);
   translate([-band_thick/2
              -side_wall_clearance,
               0, 0]) rotate([0, 90, 0]) motor_opposing_bearing();
@@ -830,7 +847,7 @@ module motor_opposing_bearing() {
   }
 }
 
-module motor_opposing_bearing_nut() {
+module motor_opposing_bearing_nut(show_nut=false) {
   mount_dia=20;
   thick=axle_hex_thick + 3;
   color("red") difference() {
@@ -842,6 +859,9 @@ module motor_opposing_bearing_nut() {
       rotate([0, 0, a+30]) translate([mount_dia/2+5, 0, 3]) cylinder(r=8, h=thick+2*e);
     }
   }
+  if (show_nut) {
+    translate([0, 0, thick-axle_hex_thick]) hex_nut(axle_hex_flat_size-fit_tolerance, axle_hex_thick-0.6);
+  }
 }
 
 module print_motor_bearing_parts() {
@@ -851,28 +871,26 @@ module print_motor_bearing_parts() {
 
 module knife_slider_layer(s=stack, is_top=false) {
   nut_dia=11;
-  hook_hole=0.7;  // hole to mount a hook for the spring-action.
-  bar_wide=nut_dia + (is_top ? 20 : 0);
-  poke_out=mount_panel_thickness + 4; // extra to mount spring-ring
+  outer_support=5;
+  bar_wide=is_top ? knife_slider_slot_w + 2*outer_support : nut_dia;
   poke_w=knife_slider_slot_w - fit_tolerance;
-  inner_length=side_wall_clearance*2+s*band_thick - 2*fit_tolerance;
+  inner_length=s*band_thick + 2*side_wall_clearance - 2*fit_tolerance;
+  outer_extras=2*(mount_panel_thickness+fit_tolerance+outer_support);
+  outer_length=is_top ? inner_length+outer_extras : inner_length;
 
-  translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_layer_thick/2]) difference() {
-    union() {
-      cube([inner_length, bar_wide, knife_slide_layer_thick], center=true);
+    translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_layer_thick/2]) difference() {
+    cube([outer_length, bar_wide, knife_slide_layer_thick], center=true);
 
-      hull() {
-        translate([-(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2]) cylinder(r=poke_w/2, h=knife_slide_layer_thick);
-        translate([+(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2]) cylinder(r=poke_w/2, h=knife_slide_layer_thick);
-      }
+    if (is_top) {
+      inner_thick=mount_panel_thickness+2*slide_tolerance;
+      inner_bw=bar_wide-2*outer_support+2*slide_tolerance;
+      translate([-(outer_length/2-outer_support-inner_thick/2+slide_tolerance), 0, 0]) cube([inner_thick, inner_bw, knife_slide_layer_thick+2*e], center=true);
+      translate([+(outer_length/2-outer_support-inner_thick/2+slide_tolerance), 0, 0]) cube([inner_thick, inner_bw, knife_slide_layer_thick+2*e], center=true);
     }
 
     // Holes for the rods
     translate([+(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=knife_slide_rod_hole/2, h=knife_slide_layer_thick+2*e);
     translate([-(s*band_thick/2+side_wall_clearance/2), 0, -knife_slide_layer_thick/2-e]) cylinder(r=knife_slide_rod_hole/2, h=knife_slide_layer_thick+2*e);
-
-    translate([-(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2-e]) cylinder(r=hook_hole/2, h=knife_slide_layer_thick+2*e);
-    translate([+(inner_length/2+poke_out), 0, -knife_slide_layer_thick/2-e]) cylinder(r=hook_hole/2, h=knife_slide_layer_thick+2*e);
   }
 }
 
@@ -882,7 +900,7 @@ module knife_slider(s=stack) {
   for (i = [0:1:knife_slide_layers-e]) {
     color(i % 2 == 0 ? "#d8c0a3" : "#c9a77e")  // 'wood' layers
     translate([0, 0, i*knife_slide_layer_thick])
-      knife_slider_layer(s, is_top = (i==knife_slide_layers-1));
+      knife_slider_layer(s, is_top = (i > knife_slide_layers-knife_slide_top_layers-1));
   }
 }
 
