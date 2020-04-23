@@ -41,6 +41,7 @@ infeed_idler_dia=25;
 knife_movement=25;     // Total vertical movement
 
 stack_spacer_wall=1.5;   // od vs. id for stack spacer tubes.
+stack_spacer_rod_dia=axle_dia;
 
 // the part engaging with the frame. This is multiple of 3mm as cut from
 // plywood.
@@ -54,6 +55,8 @@ knife_slide_rod_hole=4.3;   // The diameter threaded rod holding the wire.
 knife_slider_above_wire=30;
 knife_into_wheel=4;   // How deep we go into the slot. Mostly for animation
 knife_slider_slot_w=20;
+knife_slider_ring_support=5;       // Ring that wraps around slide dagger
+knife_slider_bottom_block_w=15;    // Needs to support at least the nut diameter
 
 fit_tolerance=0.3;                 // Tolerance of parts in contact.
 slide_tolerance=fit_tolerance;     // Tolerance of parts sliding
@@ -81,18 +84,24 @@ mount_hole_flush_with_top_knife
   - 2.5;  // To accomodate washer and nut.
 panel_corner_flush_with_top_knife = top_knife_pos - mount_panel_corner_r;
 
-// Places where we add spacers to rigidly hold together the two side-frames.
-mount_holes = [[-30, -radius-3], [36, -radius+10],
-               [36, radius],
-               // We want the knife handle be stopped by the mounting bars.
-               [12, mount_hole_flush_with_top_knife],
-               [-12, mount_hole_flush_with_top_knife]];
+mount_hole_next_to_knife_block = knife_slider_bottom_block_w/2
+  + stack_spacer_wall + stack_spacer_rod_dia/2
+  + 2*slide_tolerance;  // a bit more than usual because we dive into it.
 
-mount_panel_corners = [[-39, -radius - 6],         // bottom, out-feed side
-                       [-39, 0], //[-30, +radius+idler_dia], // up out-feed side.
-                       [-12, panel_corner_flush_with_top_knife],
-                       [+12, panel_corner_flush_with_top_knife], // summit
-                       [62, 0], [62, -radius - 6]];  // down, in-feed
+// Places where we add spacers to rigidly hold together the two side-frames.
+mount_holes = [
+  [-30, -radius-3], [36, -radius+10],
+  [36, radius],
+  // We want the knife handle be stopped by the mounting bars.
+  [mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife],
+  [-mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife]];
+
+mount_panel_corners = [
+  [-39, -radius - 6],         // bottom, out-feed side
+  [-39, 0], //[-30, +radius+idler_dia], // up out-feed side.
+  [-mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife],
+  [mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife], // summit
+  [62, 0], [62, -radius - 6]];  // down, in-feed
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
@@ -702,12 +711,14 @@ module laser_cut_mount_panel() {
 }
 
 module laser_cut_knife_slider() {
-  dist=12;
+  dist=knife_slider_bottom_block_w+1;
   for (i = [0:1:knife_slide_layers-knife_slide_top_layers-e]) {
-    translate([0, i*dist, 0]) projection(cut=true) knife_slider_layer(s=stack);
+    translate([0, i*dist+dist/2, 0]) projection(cut=true) knife_slider_layer(s=stack);
   }
+
+  dist_large=knife_slider_slot_w + 2*knife_slider_ring_support + 1;
   for (i = [0:1:knife_slide_top_layers-e]) {
-    translate([0, -i*(dist+19)-22, 0]) projection(cut=true)
+    translate([0, -i*dist_large-dist_large/2, 0]) projection(cut=true)
       knife_slider_layer(s=stack, is_top=true);
   }
 }
@@ -733,7 +744,7 @@ module print_sidewall_clearance_distance_rings() {
   }
 }
 
-module full_assembly() {
+module full_assembly(with_stack_nuts=true) {
   mechanics_assembly(stack);
 
   // Motor mounted on side.
@@ -750,9 +761,28 @@ module full_assembly() {
              -side_wall_clearance,
               0, 0]) rotate([0, 90, 0]) motor_opposing_bearing();
 
+  if (with_stack_nuts) {
+    for (h = mount_holes) {
+      translate([0, h[0], h[1]]) rotate([0, 90, 0])
+        translate([0, 0,
+                   -band_thick/2
+                   -side_wall_clearance
+                   -mount_panel_thickness
+                   -axle_hex_thick])
+        hex_nut(axle_hex_flat_size, axle_hex_thick);
+      translate([0, h[0], h[1]]) rotate([0, 90, 0])
+        translate([0, 0,
+                   stack*band_thick-band_thick/2
+                   +side_wall_clearance
+                   +mount_panel_thickness])
+        hex_nut(axle_hex_flat_size, axle_hex_thick);
+    }
+  }
+
   // Panel sides. We need to put them last, so that they are transparent to
   // all the things we add above. Weird OpenSCAD thing ?
   mount_panel(thick=mount_panel_thickness);
+
   // The other side has the motor mount.
   translate([stack*band_thick + 2*side_wall_clearance+mount_panel_thickness, 0, 0]) mount_panel(thick=mount_panel_thickness, with_motor=true);
 
@@ -870,9 +900,10 @@ module print_motor_bearing_parts() {
 }
 
 module knife_slider_layer(s=stack, is_top=false) {
-  nut_dia=11;
-  outer_support=5;
-  bar_wide=is_top ? knife_slider_slot_w + 2*outer_support : nut_dia;
+  outer_support=knife_slider_ring_support;
+  bar_wide=is_top
+    ? knife_slider_slot_w + 2*outer_support
+    : knife_slider_bottom_block_w;
   poke_w=knife_slider_slot_w - fit_tolerance;
   inner_length=s*band_thick + 2*side_wall_clearance - 2*fit_tolerance;
   outer_extras=2*(mount_panel_thickness+fit_tolerance+outer_support);
