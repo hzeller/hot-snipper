@@ -92,7 +92,7 @@ operation.
 Put aluminum sticky tape inside the wheel channel.
 
 
- Render                     | Assembled
+ Render                     | Assembled (older model)
 ----------------------------|-----------------------
 ![](img/machine-render.png) | ![](img/assembled.jpg)
 
