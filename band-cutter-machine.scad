@@ -591,7 +591,7 @@ module mount_panel_slider_rail(thick=mount_panel_thickness) {
       }
 }
 
-module mount_panel(thick=mount_panel_thickness, with_motor=true) {
+module mount_panel(thick=mount_panel_thickness, with_motor=false) {
   s=1;
   color("azure", 0.1) difference() {
     translate([-band_thick/2
@@ -922,10 +922,12 @@ module knife_slider(s=stack) {
 
 // For some reason, OpenSCAD only can deal with assigning things to $vpr
 // in the toplevel. So to enable/disable this, we can't wrap it in if (),
-// but need to comment it out. Also the reason why we have to nest it
-// in ?: operators.
+// but need to comment it out. So remove comment when generate animation.
+// Also the reason why we have to nest it in multiple ?: operators.
+//
 // Note, within each of the intervals, the anim_t moves from 0..1, so we can
 // use that for selecting knife/rotation phase.
+/*
 $vpr
   = in_interval($t, 0.00, 0.20)
   ? [ 85, 0, -80]
@@ -944,5 +946,6 @@ $vpr
       0,
       scale_range(anim_phase(anim_t, 0.6, 1), 180, 300)]
   : [ 85, 0, -80];  // Remaining time: just one phase staying put.
+*/
 
 full_assembly();
