@@ -12,6 +12,10 @@ PI=3.1415926536;
 
 stack=2;
 
+// In one animation, we go through four cycles, as we move four camera
+// positions.
+anim_t=4*$t % 1;
+
 //button_hole_distance=25.4 / 1.5;  // theoretical..
 button_hole_distance=564 / 34;      // measured ...
 hole_count=18;   // This determines the length of the final band. Must be even.
@@ -249,10 +253,9 @@ module knife_track_punch(wall_thick=3) {
 }
 
 module anim(s=4) {
-  t=$t;
   rotate([0, 0, 0]) {
-    knife_anim_fraction = animation_phase(t, 0, 0.6);
-    wheel_anim_fraction = smooth_anim(animation_phase(t, 0.6, 1));
+    knife_anim_fraction = anim_phase(anim_t, 0, 0.6);
+    wheel_anim_fraction = smooth_anim(anim_phase(anim_t, 0.6, 1));
 
     anim_rot_angle=180+wheel_anim_fraction*720;
     rotate([anim_rot_angle, 0, 0]) {
@@ -917,5 +920,26 @@ module knife_slider(s=stack) {
       knife_slider_layer(s, is_top = (i > knife_slide_layers-knife_slide_top_layers-1));
   }
 }
+
+// For some reason, OpenSCAD only can deal with assigning things to $vpr
+// in the toplevel. So to enable/disable this, we can't wrap it in if (),
+// but need to comment it out. Also the reason why we have to nest it
+// in ?: operators.
+$vpr
+  = in_interval($t, 0.00, 0.25)
+  ? [ 76, 0, -60]
+  // Here, we move the camera while the knife is moving (0..0.6)
+  : in_interval($t, 0.25, 0.50)
+  ? [ 76, 0, scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), -60, 50)]
+  // Here, we want to move during the rotation (0.6..1), move to back
+  : in_interval($t, 0.50, 0.75)
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 76, 43),
+      0,
+      scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
+  : in_interval($t, 0.75, 1.00)
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, 76),
+      0,
+      scale_range(anim_phase(anim_t, 0.6, 1), 180, 300)]
+  : [ 76, 0, -60];
 
 full_assembly();

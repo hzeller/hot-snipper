@@ -13,13 +13,15 @@ function scale_range(t, from, to) = t * (to - from) + from;
 // If t falls within the scene_start...scene_end range, scale linearly
 // between these and return 0..1. if t < scene_start, return 0,
 // if t > scene_end, return 1
-function animation_phase(t, scene_start, scene_end)
+function anim_phase(t, scene_start, scene_end)
   = ((t < scene_start) ? 0.0
      : (t >= scene_end ? 1.0
         : (t - scene_start)/(scene_end - scene_start)));
 
 // Returns an S-curve animation range between 0..1 (just a piece of cos())
 function smooth_anim(t) = (-cos(t*180) + 1)/2;
+
+function in_interval(x, from, to) = (x >= from && x < to);
 
 // Model a hex nut with the distance between the flat faces of flat_dia.
 // If channel_len is given, provides a sideways channel.
