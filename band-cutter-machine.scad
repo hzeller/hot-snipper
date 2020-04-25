@@ -404,7 +404,7 @@ module outfeed_stack(s=3, extra=0) {
 }
 
 module infeed_tray(s=5, len=40, extra=0) {
-  color("silver") for (i = [0:1:s-e]) {
+  for (i = [0:1:s-e]) {
     translate([i*band_thick, 0, 0]) {
       difference() {
         cube([band_thick, len, 1]);
@@ -443,8 +443,8 @@ module infeed_hinge(hinge_thick, clearance, tray_idler_distance,
   }
 }
 
-module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
-                 snap_detent=2, do_punch=false) {
+module snap_lock(w=side_wall_clearance-fit_tolerance, l=10, h=infeed_tray_high,
+                 snap_detent=3, do_punch=false) {
   lock_r=4/2;
   hinge_thick=1;
   spring_travel=snap_detent*2;
@@ -477,6 +477,7 @@ module snap_lock(w=side_wall_clearance, l=10, h=infeed_tray_high,
   }
 }
 
+// 'fancy', because of the snaplock :)
 module infeed_fancy_tray(s=stack, extra=0) {
   idler_r=idler_dia/2;
   tray_idler_distance=1;
@@ -504,7 +505,7 @@ module infeed_assembly(s=stack, correct_angle=0, extra=0, gravity_holes=false) {
   idler_r=idler_dia/2;
   translate([-band_thick/2, 0, 0]) rotate([correct_angle, 0, 0]) {
     rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true);
-    infeed_fancy_tray(s, extra=extra);
+    color("lightgreen") infeed_fancy_tray(s, extra=extra);
   }
 
   // this    v-- is fudging it. Somewhere else this offset is broken
