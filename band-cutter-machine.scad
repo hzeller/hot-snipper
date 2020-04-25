@@ -925,7 +925,7 @@ $vpr
   : in_interval($t, 0.60, 0.80)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, init_rot_a),
       0,
-      scale_range(anim_phase(anim_t, 0.6, 1), 180, 360+init_rot_b)]
+      scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1), 180, 360+init_rot_b)]
   : [ init_rot_a, 0, init_rot_b];  // Remaining time: one phase staying put.
 */
 
