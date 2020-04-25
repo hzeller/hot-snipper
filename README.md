@@ -18,7 +18,7 @@ adapted with the parametric CAD model.
 This machine is for that, a hot knife (really at this point: hot wire) cutter
 that allows to cut multiple parallel bands at once.
 
-[![](img/yt-thumb.jpg)](http://www.youtube.com/watch?v=dfniXM3w2Yc "Animation")
+[![](img/yt-thumb.jpg)](https://www.youtube.com/watch?v=haA3NG7cxRM "Animation")
 
 ## Manufacturing
 Most items can be entirely 3D printed, the side panels and wooden handle
