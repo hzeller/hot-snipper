@@ -543,8 +543,8 @@ module infeed_assembly(s=stack, correct_angle=0, extra=0, gravity_holes=false) {
 
 // All the mechanics combined: wheel and idlers.
 module mechanics_assembly(s=2, gravity_holes=false, extra=0) {
-  ia=-42;     // infeed angle
-  id=radius+idler_dia/2+2; // infeed distance
+  ia=-42;     // infeed angle relative to center radius
+  id=radius+idler_dia/2 + 2; // infeed distance. 2mm away from main wheel.
   translate([0, cos(ia)*id, sin(ia)*id])
     infeed_assembly(s, 0, extra, gravity_holes=gravity_holes);
 
@@ -769,7 +769,7 @@ module pcb_rails(outer_w=40, inner_w=30, len=30) {
 
 module print_nema_motor_stand() {
   // TODO: derived from lowest point in mount_panel_corners and corner radius.
-  below_center=radius + 6 + 6;
+  below_center=radius + 6 + mount_panel_corner_r;
   motor_deep=49;
   flange_thick=2.1;
   d=31/2;      // Distance of nema holes.
@@ -779,6 +779,16 @@ module print_nema_motor_stand() {
   cable_w=9;
   cable_from_front=38 + flange_thick;
   cable_deep=15;  // just long enough to punch out at the back;
+
+  // Infeed assembly position. We need this to cut out enough from the motor
+  // block for an axle to mount.
+  // TODO: this is copy/pasted from mechanics assembly and
+  // should come from one place
+  ia=-42;     // infeed angle relative to center radius
+  id=radius+idler_dia/2 + 2; // infeed distance. 2mm away from main wheel.
+  infeed_idler_punch_x=cos(ia)*id;
+  infeed_idler_punch_y=sin(ia)*id;
+
   difference() {
     union() {
       hull() {
@@ -798,10 +808,13 @@ module print_nema_motor_stand() {
         cube([below_center, cable_w, cable_deep+e]);
       // neat 'dome' cutout.
       translate([42+2, 0, 0]) cylinder(r=42/2, h=motor_deep+2*e);
+
+      // Space for the infeed-idler
+      translate([-infeed_idler_punch_y, infeed_idler_punch_x, 0]) cylinder(r=axle_hex_flat_size / cos(30) / 2 + 1, h=motor_deep+2*e);
     }
   }
-  translate([below_center-8, 0, 0]) rotate([0, -90, 0])
-    pcb_rails(len=motor_deep-10, outer_w=40, inner_w=15);
+  translate([radius+4, 0, 0]) rotate([0, -90, 0])
+    pcb_rails(len=motor_deep-10, outer_w=35.5, inner_w=15);
 }
 
 module nema_motor_stand() {
