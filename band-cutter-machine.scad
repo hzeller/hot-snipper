@@ -909,16 +909,19 @@ init_rot_b = -80;
 $vpr
   = in_interval($t, 0.00, 0.20)
   ? [ init_rot_a, 0, init_rot_b]
-  // Here, we move the camera while the knife is moving (0..0.6)
+  // Here, we move the camera around on the front while the knife is
+  // cutting (animation phase 0..0.6)
   : in_interval($t, 0.20, 0.40)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), 85, 76),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), -80, 50)]
-  // Here, we want to move during the rotation (0.6..1), move to back
+  // Here, we want to move during the rotation (0.6..1).
+  // Move to get a view from back, center, top.
   : in_interval($t, 0.40, 0.60)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 76, 43),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
+  // During next rotation, from there back to the start position.
   : in_interval($t, 0.60, 0.80)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, init_rot_a),
       0,
@@ -927,4 +930,3 @@ $vpr
 */
 
 full_assembly();
-//wheel_assembly();
