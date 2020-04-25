@@ -251,8 +251,8 @@ module knife_track_punch(wall_thick=3) {
 module anim(s=4) {
   t=$t;
   rotate([0, 0, 0]) {
-    knife_anim_fraction=(t < 0.6) ? t/0.6 : 0;
-    wheel_anim_fraction = (t > 0.6) ? (t-0.6)/0.4 : 0;
+    knife_anim_fraction = animation_phase(t, 0, 0.6);
+    wheel_anim_fraction = smooth_anim(animation_phase(t, 0.6, 1));
 
     anim_rot_angle=180+wheel_anim_fraction*720;
     rotate([anim_rot_angle, 0, 0]) {
@@ -265,7 +265,11 @@ module anim(s=4) {
     }
 
     down=sin(knife_anim_fraction*180) * knife_movement;
-    translate([0, 0, radius + knife_movement - knife_into_wheel - down])
+    // So OpenSCAD has this funny behavior, when something is touching it
+    // makes the transparent thing less opaque ? Does it draw it twice or
+    // something ? Anyway, let's not fully touch the shoulder and we're good.
+    dont_touch_fully=e;
+    translate([0, 0, radius + knife_movement - knife_into_wheel - down+dont_touch_fully])
       knife(s);
   }
 }

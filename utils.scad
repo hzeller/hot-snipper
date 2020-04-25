@@ -7,6 +7,20 @@
 e=0.01;
 fit_tolerance=0.3;                 // Tolerance of parts in contact.
 
+// Scales range between 0..1 to from..to
+function scale_range(t, from, to) = t * (to - from) + from;
+
+// If t falls within the scene_start...scene_end range, scale linearly
+// between these and return 0..1. if t < scene_start, return 0,
+// if t > scene_end, return 1
+function animation_phase(t, scene_start, scene_end)
+  = ((t < scene_start) ? 0.0
+     : (t >= scene_end ? 1.0
+        : (t - scene_start)/(scene_end - scene_start)));
+
+// Returns an S-curve animation range between 0..1 (just a piece of cos())
+function smooth_anim(t) = (-cos(t*180) + 1)/2;
+
 // Model a hex nut with the distance between the flat faces of flat_dia.
 // If channel_len is given, provides a sideways channel.
 module hex_nut(flat_dia, h, channel_len=-1,
