@@ -30,14 +30,13 @@ provides all the parts needed to print a machine that can cut two bands in
 parallel.
 
 #### Changing parallel bands
-If the `stack` parameter in the [SCAD file](./band-cutter-machine.scad#L7)
-is changed, a machine that can cut up to 5 bands in parallel can can fit on
-a Prusa MK3 bed.
-Change the value, then
+By default, the stack of bands that is cut in parallel is two, but that
+can be changed with a parameter. A machine that can cut up to 5 bands in
+parallel can fit on a Prusa MK3 bed.
 
 ```bash
-make     # to build the new artifacts
-cd fab/  # because prusa-slicer 3MF does not handle relative paths...
+make BAND_STACK=5  # to build the new artifacts; here we want 5 bands
+cd fab/            # because prusa-slicer 3MF does not handle relative paths...
 prusa-slicer band-cutter-machine.3mf
 # Now, press F5 in the UI for reload.
 ```
@@ -62,7 +61,7 @@ There are two files, provided as DXF format that need to be laser-cut.
   * `fab/laser_cut_mount_panel.dxf` can be wood, but ideally transparent
     acrylic to inspect the inside of the machine.
 
- Knife Slider (pretty small)        | Mount Panel (much larger)
+ Knife Slider (plywood, 3mm)        | Mount Panel (acrylic, 6mm)
 ------------------------------------|------------------------------------
 ![](img/laser_cut_knife_slider.png) | ![](img/laser_cut_mount_panel.png)
 

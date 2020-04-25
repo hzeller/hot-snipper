@@ -1,3 +1,8 @@
+# Number of bands that the machine shall cut. More bands make the machine wider.
+# With the default 3mf file, this can be scaled up to 5; even more
+# is possible if the parts are divided into multiple consecutive prints.
+BAND_STACK=2
+
 ALL_TARGETS=fab/mount_panel.stl \
      fab/wheel_stack.stl fab/support_enforder.stl \
      fab/print_wheel_idler.stl fab/print_infeed_weight_idler.stl \
@@ -14,10 +19,10 @@ ALL_IMAGES=img/machine-render.png \
 all: $(ALL_TARGETS)
 
 %.stl: %.scad
-	openscad -q -o $@ $<
+	openscad -q -Dstack=$(BAND_STACK) -o $@ $<
 
 %.dxf: %.scad
-	openscad -q -o $@ $<
+	openscad -q -Dstack=$(BAND_STACK) -o $@ $<
 
 update-images: $(ALL_IMAGES);
 
@@ -26,16 +31,17 @@ fab/%.scad : band-cutter-machine.scad
 	echo "use <../band-cutter-machine.scad>; $*();" > $@
 
 img/machine-render.png: fab/full_assembly.scad
-	openscad -q -o$@-tmp.png --imgsize=4096,4096 \
+	openscad -q -Dstack=$(BAND_STACK) -o$@-tmp.png --imgsize=4096,4096 \
              --camera=39,23,14,70,0,306,475 \
              --colorscheme=Nature $< \
          && cat $@-tmp.png | pngtopnm | pnmcrop | pnmscale 0.25 | pnmtopng > $@
 	rm -f $@-tmp.png
 
 img/laser_cut_%.png: fab/laser_cut_%.scad
-	openscad -q --projection=o --camera=0,0,0,0,0,0,0 --viewall \
-	--imgsize=1024,1024 --colorscheme=Nature \
-	-o $@-tmp.png $< \
+	openscad -q -Dstack=$(BAND_STACK) \
+             --projection=o --camera=0,0,0,0,0,0,0 --viewall \
+	     --imgsize=1024,1024 --colorscheme=Nature \
+	     -o $@-tmp.png $< \
          && cat $@-tmp.png | pngtopnm | pnmcrop | pnmtopng > $@
 	rm -f $@-tmp.png
 
