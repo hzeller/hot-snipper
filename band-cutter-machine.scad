@@ -12,9 +12,8 @@ PI=3.1415926536;
 
 stack=2;
 
-// In one animation, we go through four cycles, as we move four camera
-// positions.
-anim_t=4*$t % 1;
+// In one animation, we go through a few cycles, as we move camera positions.
+anim_t=5*$t % 1;
 
 //button_hole_distance=25.4 / 1.5;  // theoretical..
 button_hole_distance=564 / 34;      // measured ...
@@ -925,21 +924,23 @@ module knife_slider(s=stack) {
 // in the toplevel. So to enable/disable this, we can't wrap it in if (),
 // but need to comment it out. Also the reason why we have to nest it
 // in ?: operators.
+// Note, within each of the intervals, the anim_t moves from 0..1, so we can
+// use that for selecting knife/rotation phase.
 $vpr
-  = in_interval($t, 0.00, 0.25)
+  = in_interval($t, 0.00, 0.20)
   ? [ 76, 0, -60]
   // Here, we move the camera while the knife is moving (0..0.6)
-  : in_interval($t, 0.25, 0.50)
+  : in_interval($t, 0.20, 0.40)
   ? [ 76, 0, scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), -60, 50)]
   // Here, we want to move during the rotation (0.6..1), move to back
-  : in_interval($t, 0.50, 0.75)
+  : in_interval($t, 0.40, 0.60)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 76, 43),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
-  : in_interval($t, 0.75, 1.00)
+  : in_interval($t, 0.60, 0.80)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, 76),
       0,
       scale_range(anim_phase(anim_t, 0.6, 1), 180, 300)]
-  : [ 76, 0, -60];
+  : [ 76, 0, -60];  // Remaining time: just one phase staying put.
 
 full_assembly();

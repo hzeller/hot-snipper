@@ -46,6 +46,8 @@ img/laser_cut_%.png: fab/laser_cut_%.scad
 	rm -f $@-tmp.png
 
 # This assumes some animation with dump-pictures enabled in UI. Unfortuantely,
-# there is no simple offline way yet to do that.
+# there is no simple offline way yet to do that yet.
+# There are 5 cycles shown, each probably should be > 7 seconds
+# For 60fps, that would be at least 2100 frames.
 cut-wheel.mp4: frame00000.png   #... and more
-	ffmpeg -framerate 60 -y -i frame%05d.png -filter "loop=3:size=400" $@
+	ffmpeg -framerate 60 -y -i frame%05d.png $@
