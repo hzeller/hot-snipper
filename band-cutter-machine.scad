@@ -155,18 +155,6 @@ module basic_wheel(extra=0) {
     translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_thick+2*e);
   }
 
-  intersection() {
-    translate([0, 0, -band_thick/2]) difference() {
-      cylinder(r=radius, h=band_thick);
-      translate([0, 0, -e]) cylinder(r=radius-wheel_wall, h=band_thick+2*e);
-    }
-    union() {
-      support_arc(0, 30, radius=radius+10, high=band_thick);
-      if (bands_per_wheel==2)
-        support_arc(180, 30, radius=radius+10, high=band_thick);
-    }
-  }
-
   // spokes.
   intersection() {
     union() {
@@ -273,23 +261,6 @@ module anim(s=4) {
     dont_touch_fully=e;
     translate([0, 0, radius + knife_movement - knife_into_wheel - down+dont_touch_fully])
       knife(s);
-  }
-}
-
-module arc_range(start=-10, end=10, radius=100, high=5) {
-  hull() {
-    cylinder(r=e, h=high);
-    rotate([0, 0, start]) translate([radius, 0, 0]) cylinder(r=e, h=high);
-    rotate([0, 0, end]) translate([radius, 0, 0]) cylinder(r=e, h=high);
-  }
-}
-
-module support_arc(center=0, angle_dist=10, radius=100, high=10) {
-  small_dist=angle_dist/3;
-  hull() {
-    translate([0, 0, high/2]) arc_range(start=center-small_dist, end=center+small_dist, radius=radius, high=e);
-    arc_range(start=center-angle_dist, end=center+angle_dist, radius=radius, high=e);
-    translate([0, 0, -high/2]) arc_range(start=center-small_dist, end=center+small_dist, radius=radius, high=e);
   }
 }
 
@@ -406,7 +377,7 @@ module outfeed_stack_material(s=3, extra=0) {
 
   slot_w=13;
   sw_r=4/2+extra;
-  sw=side_wall_clearance+mount_panel_thickness;
+  sw=side_wall_clearance+mount_panel_thickness+e;
 
   // Rounded slot mount
   translate([-d*s+d/2-sw, 0, 0]) hull() {
@@ -550,7 +521,7 @@ module mechanics_assembly(s=2, gravity_holes=false, extra=0) {
   translate([0, cos(ia)*id, sin(ia)*id])
     infeed_assembly(s, 0, extra, gravity_holes=gravity_holes);
 
-  // Idlers around the knife
+  // Top idlers around the knife
   rotate([-20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true, gravity_holes=gravity_holes);
   rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true, gravity_holes=gravity_holes);
 
@@ -831,7 +802,10 @@ module motor_coupler() {
   height=side_wall_clearance - rotation_clearance + engage_height;
   coupler_dia=16;
 
-  color("yellow") translate([0, 0, height]) rotate([0, 180, 0]) difference() {
+  // Need to render() to fix a weird artifact where the color bleeds into
+  // the mated wheel.
+  color("yellow") render()
+    translate([0, 0, height]) rotate([0, 180, 0]) difference() {
     cylinder(r=coupler_dia/2, h=height);
     translate([0, 0, -band_thick/2+engage_height])
       wheel_assembly(extra=fit_tolerance);
