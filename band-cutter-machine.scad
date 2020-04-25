@@ -135,16 +135,17 @@ module button_hole_tooth() {
 // Widening to accomodate hot knife through wheel.
 module spoke_cut_widening(from_edge=cut_slot_deep) {
   widening_r=spoke_slot + spoke_thick;
-  hull() {
-    translate([radius - from_edge, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
-    translate([radius, 0, -band_thick/2]) cylinder(r=widening_r, h=band_thick);
+  translate([radius - from_edge, 0, -band_thick/2]) hull() {
+    cylinder(r=widening_r, h=band_thick);
+    translate([from_edge, -widening_r, 0]) cube([e, 2*widening_r, band_thick]);
   }
 }
 
 module spoke_cut_widening_punch(from_edge=cut_slot_deep) {
-  translate([radius-from_edge, 0, -15]) hull() {
-    cylinder(r=spoke_slot, h=30);
-    translate([50, 0, 0]) cylinder(r=spoke_slot, h=30);
+  cutout_h=band_thick+2*e;
+  translate([radius-from_edge, 0, -cutout_h/2]) hull() {
+    cylinder(r=spoke_slot, h=cutout_h);
+    translate([from_edge, -spoke_slot, 0]) cube([e, 2*spoke_slot, cutout_h]);
   }
 }
 
@@ -926,3 +927,4 @@ $vpr
 */
 
 full_assembly();
+//wheel_assembly();
