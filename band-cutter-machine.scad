@@ -903,9 +903,11 @@ module knife_slider(s=stack) {
 // Note, within each of the intervals, the anim_t moves from 0..1, so we can
 // use that for selecting knife/rotation phase.
 /*
+init_rot_a = 85;
+init_rot_b = -80;
 $vpr
   = in_interval($t, 0.00, 0.20)
-  ? [ 85, 0, -80]
+  ? [ init_rot_a, 0, init_rot_b]
   // Here, we move the camera while the knife is moving (0..0.6)
   : in_interval($t, 0.20, 0.40)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), 85, 76),
@@ -917,10 +919,10 @@ $vpr
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
   : in_interval($t, 0.60, 0.80)
-  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, 85),
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, init_rot_a),
       0,
-      scale_range(anim_phase(anim_t, 0.6, 1), 180, 300)]
-  : [ 85, 0, -80];  // Remaining time: just one phase staying put.
+      scale_range(anim_phase(anim_t, 0.6, 1), 180, 360+init_rot_b)]
+  : [ init_rot_a, 0, init_rot_b];  // Remaining time: one phase staying put.
 */
 
 full_assembly();
