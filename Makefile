@@ -3,20 +3,24 @@
 # is possible if the parts are divided into multiple consecutive prints.
 BAND_STACK=2
 
-ALL_TARGETS=fab/mount_panel.stl \
+ALL_TARGETS_STL=fab/mount_panel.stl \
      fab/wheel_stack.stl fab/support_enforder.stl \
      fab/print_wheel_idler.stl fab/print_infeed_weight_idler.stl \
      fab/infeed_fancy_tray.stl fab/print_outfeed.stl \
      fab/print_stack_spacer.stl \
      fab/print_sidewall_clearance_distance_rings.stl \
      fab/print_nema_motor_stand.stl \
-     fab/motor_coupler.stl fab/print_motor_bearing_parts.stl \
-     fab/laser_cut_mount_panel.dxf fab/laser_cut_knife_slider.dxf
+     fab/motor_coupler.stl fab/print_motor_bearing_parts.stl
+
+ALL_TARGETS_DXF=fab/laser_cut_mount_panel.dxf fab/laser_cut_knife_slider.dxf
 
 ALL_IMAGES=img/machine-render.png \
            img/laser_cut_knife_slider.png img/laser_cut_mount_panel.png
 
-all: $(ALL_TARGETS)
+all: all-stl all-dxf
+
+all-stl: $(ALL_TARGETS_STL)
+all-dxf: $(ALL_TARGETS_DXF)
 
 %.stl: %.scad
 	openscad -q -Dstack=$(BAND_STACK) -o $@ $<

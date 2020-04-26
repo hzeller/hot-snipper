@@ -27,7 +27,7 @@ is laser cut. To generate manufacturing outputs with OpenSCAD, type `make`.
 ### 3D printing
 The provided fab/band-cutter-machine.3mf file contains a print layout that
 provides all the parts needed to print a machine that can cut two bands in
-parallel.
+parallel (This fits on an area small enough to be printed on a Prusa Mini).
 
 #### Changing parallel bands
 By default, the stack of bands that is cut in parallel is two, but that

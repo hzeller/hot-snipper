@@ -386,8 +386,13 @@ module outfeed_stack_material(s=3, extra=0) {
     translate([0, 19+slot_w, radius-4/2+outfeed_offset]) rotate([0, 90, 0]) cylinder(r=sw_r, h=2*sw+d*s);
   }
 
-  // bar, also shoulder.
-  translate([-d*s/2+d/2, 19+slot_w/2, radius-4/2+outfeed_offset]) cube([2*side_wall_clearance+d*s, slot_w+6, 4], center=true);
+  // bar, also shoulder. We want it to be a snug fit, same length as spacer.
+  // But it should not be the determining width, do let's give it a smidge of
+  // fit tolerance.
+  width_fit_tolerance=fit_tolerance;
+  translate([-d*s/2+d/2, 19+slot_w/2, radius-4/2+outfeed_offset])
+    cube([2*side_wall_clearance+d*s-width_fit_tolerance, slot_w+6, 4],
+         center=true);
 }
 
 module outfeed_stack_punch(s=3, extra=0) {
@@ -622,7 +627,6 @@ module print_stack_spacer(with_brim=true) {
   translate([30, 0, 0]) stack_spacer(with_brim=with_brim);
   translate([0, 15, 0]) stack_spacer(with_brim=with_brim);
   translate([15, 15, 0]) stack_spacer(with_brim=with_brim);
-  translate([30, 15, 0]) stack_spacer(with_brim=with_brim);
 }
 
 module print_wheel_idler(s=stack) {
@@ -690,7 +694,7 @@ module full_assembly(with_stack_nuts=true) {
   // Motor mounted on side.
   translate([stack*band_thick - band_thick/2   // We mount motor on other side
              + side_wall_clearance
-             + mount_panel_thickness, 0, 0]) nema_motor_stand();
+             + mount_panel_thickness + e, 0, 0]) nema_motor_stand();
 
   // The floating axle holder on the other side, holding onto that frame
   // perpendicularly with nuts.
@@ -706,14 +710,14 @@ module full_assembly(with_stack_nuts=true) {
       translate([0, h[0], h[1]])
         translate([-band_thick/2
                    -side_wall_clearance
-                   -mount_panel_thickness, 0, 0])
+                   -mount_panel_thickness-e, 0, 0])
         rotate([0, -90, 0])
         hex_nut(axle_hex_flat_size, axle_hex_thick, with_washer=true,
                 show_screw_dia=axle_dia);
       translate([0, h[0], h[1]])
         translate([stack*band_thick-band_thick/2
                    +side_wall_clearance
-                   +mount_panel_thickness, 0, 0])
+                   +mount_panel_thickness+e, 0, 0])
         rotate([0, 90, 0])
         hex_nut(axle_hex_flat_size, axle_hex_thick, with_washer=true,
                 show_screw_dia=axle_dia);
