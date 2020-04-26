@@ -101,7 +101,7 @@ mount_hole_next_to_knife_block = knife_slider_bottom_block_w/2
 // Places where we add spacers to rigidly hold together the two side-frames.
 mount_holes = [
   [39, -radius+12], [36, radius],  // Infeed side
-  [-30, -radius-3],                // Outfeed side
+  [-36, -radius-3],                // Outfeed side
   // Top around knife slider.
   [mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife],
   [-mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife]];
