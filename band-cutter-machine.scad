@@ -49,8 +49,9 @@ infeed_idler_dia=25;
 
 knife_movement=25;     // Total vertical movement
 
-stack_spacer_wall=1.5;   // od vs. id for stack spacer tubes.
+stack_spacer_wall=1.5;       // od vs. id for stack spacer tubes.
 stack_spacer_rod_dia=axle_dia;
+stack_spacer_print_flat=true;   // make hexagon instead of round.
 
 // the part engaging with the frame. This is multiple of 3mm as cut from
 // plywood.
@@ -600,33 +601,42 @@ module mount_panel(thick=mount_panel_thickness, with_motor=false) {
   }
 }
 
-module hollow_cylinder(r=10, axle_r=8, h=10, with_brim=false) {
+module hollow_cylinder(r=10, axle_r=8, h=10, with_brim=false,
+                       flat=false) {
   difference() {
     union() {
-      cylinder(r=r, h=h);
+      cylinder(r=r, h=h, $fn=flat ? 6 : 30);
       if (with_brim) cylinder(r=r+3, h=0.3);
     }
     translate([0, 0, -e]) cylinder(r=axle_r, h=h+2*e);
   }
 }
 
-module stack_spacer(s=stack, with_brim=false) {
+module stack_spacer(s=stack, with_brim=false, flat=stack_spacer_print_flat) {
   total_width = stack * band_thick + 2*side_wall_clearance;
   color("azure", 0.25) hollow_cylinder(r=axle_dia/2+stack_spacer_wall,
                                        axle_r=axle_dia/2,
                                        h=total_width,
-                                       with_brim=with_brim);
+                                       with_brim=with_brim,
+                                       flat=flat);
 }
 
 
 // Useful outputting modules (TODO: should we add our own bottom support as
 // it is not possible right now to brim on just one part in prusa-slicer?)
 module print_stack_spacer(with_brim=true) {
-  translate([0, 0, 0]) stack_spacer(with_brim=with_brim);
-  translate([15, 0, 0]) stack_spacer(with_brim=with_brim);
-  translate([30, 0, 0]) stack_spacer(with_brim=with_brim);
-  translate([0, 15, 0]) stack_spacer(with_brim=with_brim);
-  translate([15, 15, 0]) stack_spacer(with_brim=with_brim);
+  if (stack_spacer_print_flat) {
+    dist = axle_dia + 2*stack_spacer_wall + 1;
+    for (i = [0:1:5-e]) {
+      translate([i*dist, 0, 0]) rotate([90, 0, 0]) stack_spacer(flat=true);
+    }
+  } else {
+    translate([0, 0, 0]) stack_spacer(with_brim=with_brim);
+    translate([15, 0, 0]) stack_spacer(with_brim=with_brim);
+    translate([30, 0, 0]) stack_spacer(with_brim=with_brim);
+    translate([0, 15, 0]) stack_spacer(with_brim=with_brim);
+    translate([15, 15, 0]) stack_spacer(with_brim=with_brim);
+  }
 }
 
 module print_wheel_idler(s=stack) {
