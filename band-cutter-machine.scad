@@ -910,37 +910,37 @@ module knife_slider(s=stack) {
   }
 }
 
-// For some reason, OpenSCAD only can deal with assigning things to $vpr
-// in the toplevel. So to enable/disable this, we can't wrap it in if (),
-// but need to comment it out. So remove comment when generate animation.
-// Also the reason why we have to nest it in multiple ?: operators.
+// We can only toplevel update $vpr, so we need to encasulate all conditions
+// with functional operators instead of if/else.
 //
 // Note, within each of the intervals, the anim_t moves from 0..1, so we can
 // use that for selecting knife/rotation phase.
-/*
-init_rot_a = 85;
-init_rot_b = -80;
-$vpr
-  = in_interval($t, 0.00, 0.20)
+function camera_position(time, init_rot_a = 85, init_rot_b = -80)
+  = in_interval(time, 0.00, 0.20)
   ? [ init_rot_a, 0, init_rot_b]
   // Here, we move the camera around on the front while the knife is
   // cutting (animation phase 0..0.6)
-  : in_interval($t, 0.20, 0.40)
+  : in_interval(time, 0.20, 0.40)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), 85, 76),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), -80, 50)]
   // Here, we want to move during the rotation (0.6..1).
   // Move to get a view from back, center, top.
-  : in_interval($t, 0.40, 0.60)
+  : in_interval(time, 0.40, 0.60)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 76, 43),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
   // During next rotation, from there back to the start position.
-  : in_interval($t, 0.60, 0.80)
+  : in_interval(time, 0.60, 0.80)
   ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, init_rot_a),
       0,
       scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 180, 360+init_rot_b)]
   : [ init_rot_a, 0, init_rot_b];  // Remaining time: one phase staying put.
-*/
+
+
+// For some reason, OpenSCAD only can deal with assigning things to $vpr
+// in the toplevel. So to enable/disable this, we can't wrap it in if (),
+// but need to comment it out. So remove comment when generate animation.
+//$vpr = camera_position($t);
 
 full_assembly();
