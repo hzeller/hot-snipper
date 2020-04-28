@@ -12,8 +12,13 @@ PI=3.1415926536;
 
 stack=2;
 
-// In one animation, we go through a few cycles, as we move camera positions.
+// In one animation, we go through a few cycles, as we move camera positions,
+// see camera_position() function.
 anim_t=5*$t % 1;
+
+// The phases we animate the knife and rotation.
+anim_knife_range = [0, 0.6];  // first 60% of the time.
+anim_rot_range = [0.6, 1];
 
 //button_hole_distance=25.4 / 1.5;  // theoretical..
 button_hole_distance=564 / 34;      // measured ...
@@ -243,8 +248,8 @@ module knife_track_punch(wall_thick=3) {
 
 module anim(s=4) {
   rotate([0, 0, 0]) {
-    knife_anim_fraction = anim_phase(anim_t, 0, 0.6);
-    wheel_anim_fraction = smooth_anim(anim_phase(anim_t, 0.6, 1));
+    knife_anim_fraction = anim_phase(anim_t, anim_knife_range);
+    wheel_anim_fraction = smooth_anim(anim_phase(anim_t, anim_rot_range));
 
     anim_rot_angle=180+wheel_anim_fraction*720;
     rotate([anim_rot_angle, 0, 0]) {
@@ -915,32 +920,32 @@ module knife_slider(s=stack) {
 //
 // Note, within each of the intervals, the anim_t moves from 0..1, so we can
 // use that for selecting knife/rotation phase.
-function camera_position(time, init_rot_a = 85, init_rot_b = -80)
+function camera_position(time, rot_a = 85, rot_b = -80)
   = in_interval(time, 0.00, 0.20)
-  ? [ init_rot_a, 0, init_rot_b]
+  ? [ rot_a, 0, rot_b]
   // Here, we move the camera around on the front while the knife is
   // cutting (animation phase 0..0.6)
   : in_interval(time, 0.20, 0.40)
-  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), 85, 76),
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, anim_knife_range)), 85, 76),
       0,
-      scale_range(smooth_anim(anim_phase(anim_t, 0, 0.6)), -80, 50)]
+      scale_range(smooth_anim(anim_phase(anim_t, anim_knife_range)), -80, 50)]
   // Here, we want to move during the rotation (0.6..1).
   // Move to get a view from back, center, top.
   : in_interval(time, 0.40, 0.60)
-  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 76, 43),
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, anim_rot_range)), 76, 43),
       0,
-      scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 50, 180)]
+      scale_range(smooth_anim(anim_phase(anim_t, anim_rot_range)), 50, 180)]
   // During next rotation, from there back to the start position.
   : in_interval(time, 0.60, 0.80)
-  ? [ scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 43, init_rot_a),
+  ? [ scale_range(smooth_anim(anim_phase(anim_t, anim_rot_range)), 43, rot_a),
       0,
-      scale_range(smooth_anim(anim_phase(anim_t, 0.6, 1)), 180, 360+init_rot_b)]
-  : [ init_rot_a, 0, init_rot_b];  // Remaining time: one phase staying put.
+      scale_range(smooth_anim(anim_phase(anim_t, anim_rot_range)), 180, 360+rot_b)]
+  : [ rot_a, 0, rot_b];  // Remaining time: one phase staying put.
 
 
 // For some reason, OpenSCAD only can deal with assigning things to $vpr
 // in the toplevel. So to enable/disable this, we can't wrap it in if (),
 // but need to comment it out. So remove comment when generate animation.
-//$vpr = camera_position($t);
+$vpr = camera_position($t);
 
 full_assembly();
