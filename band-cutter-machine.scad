@@ -90,12 +90,12 @@ blade_h=3.5;
 blade_w=0.7;
 blade_l=4;
 
-top_knife_pos
-  = radius - knife_into_wheel
-  + knife_slider_above_wire + (knife_slide_layers-knife_slide_top_layers)*knife_slide_layer_thick;
+top_knife_pos = radius - knife_into_wheel
+  + knife_slider_above_wire
+  + (knife_slide_layers-knife_slide_top_layers)*knife_slide_layer_thick;
 
 mount_hole_flush_with_top_knife
-  = top_knife_pos - axle_dia/2-stack_spacer_wall
+= top_knife_pos - axle_dia/2-stack_spacer_wall
   - 2.5;  // To accomodate washer and nut.
 panel_corner_flush_with_top_knife = top_knife_pos - mount_panel_corner_r;
 
@@ -104,19 +104,19 @@ mount_hole_next_to_knife_block = knife_slider_bottom_block_w/2
   + 2*slide_tolerance;  // a bit more than usual because we dive into it.
 
 // Places where we add spacers to rigidly hold together the two side-frames.
-mount_holes = [
-  [39, -radius+12], [36, radius],  // Infeed side
-  [-36, -radius-3],                // Outfeed side
-  // Top around knife slider.
-  [mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife],
-  [-mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife]];
+mount_holes
+ = [[39, -radius+12], [36, radius],  // Infeed side
+    [-36, -radius-3],                // Outfeed side
+    // Top around knife slider.
+    [mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife],
+    [-mount_hole_next_to_knife_block, mount_hole_flush_with_top_knife]];
 
-mount_panel_corners = [
-  [-39, -radius - 6],         // bottom, out-feed side
-  [-39, 0], //[-30, +radius+idler_dia], // up out-feed side.
-  [-mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife],
-  [mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife], // summit
-  [62, 0], [62, -radius - 6]];  // down, in-feed
+mount_panel_corners
+ = [[-39, -radius - 6],         // bottom, out-feed side
+    [-39, 0], //[-30, +radius+idler_dia], // up out-feed side.
+    [-mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife],
+    [mount_hole_next_to_knife_block, panel_corner_flush_with_top_knife], // summit
+    [62, 0], [62, -radius - 6]];  // down, in-feed
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
@@ -576,14 +576,14 @@ module nema17_punch(h=50) {
 }
 
 module mount_panel_slider_rail(thick=mount_panel_thickness) {
-        hull() {
-        slot_half=knife_slider_slot_w/2;
-        top=top_knife_pos;
-        spring_mount = 4;
-        translate([-thick/2, -knife_slider_slot_w/2, top-e]) cube([thick, knife_slider_slot_w, e]);
-        translate([0, -(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
-        translate([0, +(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
-      }
+  hull() {
+    slot_half=knife_slider_slot_w/2;
+    top=top_knife_pos;
+    spring_mount = 4;
+    translate([-thick/2, -knife_slider_slot_w/2, top-e]) cube([thick, knife_slider_slot_w, e]);
+    translate([0, -(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
+    translate([0, +(slot_half-mount_panel_corner_r), top+knife_movement+knife_slide_top_len+spring_mount]) panel_corner(thick=thick);
+  }
 }
 
 module mount_panel(thick=mount_panel_thickness, with_motor=false) {
@@ -729,7 +729,7 @@ module full_assembly(with_stack_nuts=true) {
              -mount_panel_thickness, 0, 0]) rotate([0, -90, 0]) motor_opposing_bearing_nut(show_nut=true);
   translate([-band_thick/2
              -side_wall_clearance,
-              0, 0]) rotate([0, 90, 0]) motor_opposing_bearing();
+             0, 0]) rotate([0, 90, 0]) motor_opposing_bearing();
 
   if (with_stack_nuts) {
     for (h = mount_holes) {
@@ -897,12 +897,12 @@ module knife_slider_layer(s=stack, is_top=false) {
   outer_extras=2*(mount_panel_thickness+fit_tolerance+outer_support);
   outer_length=is_top ? inner_length+outer_extras : inner_length;
 
-    translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_layer_thick/2]) difference() {
-      if (is_top) {
-        rounded_cube([outer_length, bar_wide, knife_slide_layer_thick], center=true);
-      } else {
-        cube([outer_length, bar_wide, knife_slide_layer_thick], center=true);
-      }
+  translate([(s*band_thick/2+side_wall_clearance/2)-side_wall_clearance/2, 0, knife_slide_layer_thick/2]) difference() {
+    if (is_top) {
+      rounded_cube([outer_length, bar_wide, knife_slide_layer_thick], center=true);
+    } else {
+      cube([outer_length, bar_wide, knife_slide_layer_thick], center=true);
+    }
 
     if (is_top) {
       inner_thick=mount_panel_thickness+2*slide_tolerance;
@@ -932,8 +932,8 @@ module knife_slider(s=stack) {
 //
 // Note, within each of the intervals, the anim_t moves from 0..1, so we can
 // use that for selecting knife/rotation phase.
-function camera_position(time, rot_a = 85, rot_b = -80)
-  = in_interval(time, 0.00, 0.20)
+function camera_position(time, rot_a = 85, rot_b = -80) =
+  in_interval(time, 0.00, 0.20)
   ? [ rot_a, 0, rot_b]
   // Here, we move the camera around on the front while the knife is
   // cutting (animation phase 0..0.6)
