@@ -7,5 +7,6 @@ pkgs.mkShell {
 
       # CAM
       prusa-slicer  
+      netpbm  # image render
     ];
 }
