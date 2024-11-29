@@ -17,34 +17,36 @@ ALL_TARGETS_DXF=fab/laser_cut_mount_panel.dxf fab/laser_cut_knife_slider.dxf
 ALL_IMAGES=img/machine-render.png \
            img/laser_cut_knife_slider.png img/laser_cut_mount_panel.png
 
+FN=196
+OPENSCAD=openscad --backend Manifold -D\$$fn=$(FN)
+
 all: all-stl all-dxf
 
 all-stl: $(ALL_TARGETS_STL)
 all-dxf: $(ALL_TARGETS_DXF)
-
-%.stl: %.scad
-	openscad -q -Dstack=$(BAND_STACK) -o $@ $<
-
-%.dxf: %.scad
-	openscad -q -Dstack=$(BAND_STACK) -o $@ $<
-
 update-images: $(ALL_IMAGES);
 
+%.stl: %.scad
+	$(OPENSCAD) -q -Dstack=$(BAND_STACK) -o $@ $<
+
+%.dxf: %.scad
+	$(OPENSCAD) -q -Dstack=$(BAND_STACK) -o $@ $<
+
 fab/%.scad : band-cutter-machine.scad
-	mkdir -p fab
+	@mkdir -p fab
 	echo "use <../band-cutter-machine.scad>; $*();" > $@
 
 img/machine-render.png: fab/full_assembly.scad
-	openscad -q -Dstack=$(BAND_STACK) -o$@-tmp.png --imgsize=4096,4096 \
+	$(OPENSCAD) -q -Dstack=$(BAND_STACK) -o$@-tmp.png --imgsize=4096,4096 \
              --camera=39,23,14,70,0,306,475 \
              --colorscheme=Nature $< \
          && cat $@-tmp.png | pngtopnm | pnmcrop | pnmscale 0.25 | pnmtopng > $@
 	rm -f $@-tmp.png
 
 img/laser_cut_%.png: fab/laser_cut_%.scad
-	openscad -q -Dstack=$(BAND_STACK) \
+	$(OPENSCAD) -q -Dstack=$(BAND_STACK) \
              --projection=o --camera=0,0,0,0,0,0,0 --viewall \
-	     --imgsize=1024,1024 --colorscheme=Nature \
+	     --imgsize=4096,4096 --colorscheme=Nature \
 	     -o $@-tmp.png $< \
          && cat $@-tmp.png | pngtopnm | pnmcrop | pnmtopng > $@
 	rm -f $@-tmp.png
