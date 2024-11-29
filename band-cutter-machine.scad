@@ -6,7 +6,7 @@
 
 use <utils.scad>
 
-$fn=96;
+$fn=120;
 e=0.01;
 PI=3.1415926536;
 
@@ -120,6 +120,18 @@ mount_panel_corners = [
 
 echo("circumreference ", circ, "; radius=", radius, "; teeth=", bands_per_wheel*hole_count, "; inner-width: ", stack * band_thick + 2*side_wall_clearance, "; knife-rod-distance: ", stack * band_thick + side_wall_clearance);
 
+// Some colors used below
+color_tooth="yellow";
+color_knife="orange";   // glow
+color_wheel_idler="blue";
+color_axle="gray";
+color_infeed="lightgreen";
+color_outfeed="violet";
+color_panel=[1, 1, 1, 0.1];
+color_stack_spacer=[0, 1, 0, 0.25];
+color_motor_coupler="yellow";
+color_counter_bearing="red";
+color_wood=["#d8c0a3", "#c9a77e"];  // plywood 'wood' layers
 
 module mount_place(dia) {
   translate([0, 0, -band_thick/2]) cylinder(r=dia/2 + 2, h=band_thick);
@@ -129,9 +141,9 @@ module mount_place_punch(dia) {
   translate([0, 0, -(band_thick+e)/2]) cylinder(r=dia/2, h=band_thick+2*e);
 }
 
-// A 'tooth' engaging with a butotn hole.
+// A 'tooth' engaging with a button hole.
 module button_hole_tooth() {
-  color("yellow") hull() {
+  color(color_tooth) hull() {
     cube([e, blade_l, blade_w], center=true);
     translate([1.5, 0, 0]) cube([e, blade_l, blade_w], center=true);
     translate([blade_h, 0, 0]) cube([e, blade_l-2, blade_w], center=true);
@@ -211,14 +223,13 @@ module knife(s=stack) {
   d=band_thick;
   nd=8;   // nut dia
   nh=2.5; // nut height
-  glow="orange";
   translate([-d/2, -0, 0]) {
-    translate([-side_wall_clearance/2, 0, 0]) rotate([0, 90, 0]) color(glow)
+    translate([-side_wall_clearance/2, 0, 0]) rotate([0, 90, 0]) color(color_knife)
       cylinder(r=0.5, h=s*d+side_wall_clearance);  // 'wire'
 
     translate([-side_wall_clearance/2, 0, 0]) {
       translate([0, 0, -3]) cylinder(r=4.5/2, h=60);  // rod
-      color(glow) cylinder(r=5/2, h=1);
+      color(color_knife) cylinder(r=5/2, h=1);
       translate([0, 0, knife_slider_above_wire-nh]) hex_nut(flat_dia=nd, h=nh);
       translate([0, 0, knife_slider_above_wire-2*nh]) rotate([0, 0, 17]) hex_nut(flat_dia=nd, h=nh); // counter nut.
       translate([0, 0, knife_slider_above_wire+knife_slide_len]) hex_nut(flat_dia=nd, h=nh, with_washer=true);
@@ -226,7 +237,7 @@ module knife(s=stack) {
     }
     translate([s*d+side_wall_clearance/2, 0, 0]) {
       translate([0, 0, -3]) cylinder(r=4.5/2, h=60);
-      color(glow) cylinder(r=5/2, h=1);
+      color(color_knife) cylinder(r=5/2, h=1);
       translate([0, 0, knife_slider_above_wire-nh]) hex_nut(flat_dia=nd, h=nh);
       translate([0, 0, knife_slider_above_wire-2*nh]) rotate([0, 0, 38]) hex_nut(flat_dia=nd, h=nh); // counter nut.
       translate([0, 0, knife_slider_above_wire+knife_slide_len]) hex_nut(flat_dia=nd, h=nh, with_washer=true);
@@ -288,7 +299,7 @@ module wheel_idler(is_first=false, is_last=false) {
 
 module wheel_idler_stack(s=stack, print_distance=-1, with_axle=false, gravity_holes=false) {
   d = band_thick;
-  color("blue") for (i = [0:1:s+1-e]) {
+  color(color_wheel_idler) for (i = [0:1:s+1-e]) {
     is_first=(i == 0);
     is_last = (i == s);
     if (print_distance < 0) {
@@ -303,7 +314,7 @@ module wheel_idler_stack(s=stack, print_distance=-1, with_axle=false, gravity_ho
   axle_extra=side_wall_clearance + mount_panel_thickness + 5;
   if (with_axle) {
     translate([0, 0, -axle_extra])
-      color("gray") cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
+      color(color_axle) cylinder(r=axle_dia/2, h=s*d+2*axle_extra);
     translate([0, 0, -axle_extra+4]) retainer_clip(r=axle_dia/2);
     translate([0, 0, s*d+axle_extra-4]) retainer_clip(r=axle_dia/2);
   }
@@ -329,7 +340,7 @@ module infeed_idler(outer=15, is_last=false) {
 module infeed_idler_stack(s=stack, print_distance=-1, with_axle=false,
                           gravity_holes=false, outer=infeed_idler_dia/2) {
   d = band_thick;
-  color("blue") for (i = [0:1:s-e]) {
+  color(color_wheel_idler) for (i = [0:1:s-e]) {
     is_last= (i == s-1);
     if (print_distance < 0) {
       translate([0, 0, i*d]) infeed_idler(outer, is_last=is_last);
@@ -344,7 +355,7 @@ module infeed_idler_stack(s=stack, print_distance=-1, with_axle=false,
   translate([0, 0, -band_separation/2]) {
     if (with_axle) {
       translate([0, 0, -axle_extra])
-        color("gray") cylinder(r=axle_display/2, h=s*d + 2*axle_extra);
+        color(color_axle) cylinder(r=axle_display/2, h=s*d + 2*axle_extra);
       translate([0, 0, -axle_extra+4]) retainer_clip(r=axle_dia/2);
       translate([0, 0, s*d+axle_extra-4]) retainer_clip(r=axle_dia/2);
     }
@@ -517,7 +528,7 @@ module infeed_assembly(s=stack, correct_angle=0, extra=0, gravity_holes=false) {
   idler_r=idler_dia/2;
   translate([-band_thick/2, 0, 0]) rotate([correct_angle, 0, 0]) {
     rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true);
-    color("lightgreen") infeed_fancy_tray(s, extra=extra);
+    color(color_infeed) infeed_fancy_tray(s, extra=extra);
   }
 
   // this    v-- is fudging it. Somewhere else this offset is broken
@@ -539,7 +550,7 @@ module mechanics_assembly(s=2, gravity_holes=false, extra=0) {
   rotate([20, 0, 0]) translate([-band_thick/2, 0, radius+8+1]) rotate([0, 90, 0]) wheel_idler_stack(s, with_axle=true, gravity_holes=gravity_holes);
 
   // Outfeed
-  rotate([45, 0, 0]) rotate([0, 0, 180]) color("violet") outfeed_stack(s, extra=extra);
+  rotate([45, 0, 0]) rotate([0, 0, 180]) color(color_outfeed) outfeed_stack(s, extra=extra);
 
   // Wheel + knife. Animatable.
   anim(s);
@@ -577,7 +588,7 @@ module mount_panel_slider_rail(thick=mount_panel_thickness) {
 
 module mount_panel(thick=mount_panel_thickness, with_motor=false) {
   s=1;
-  color("azure", 0.1) difference() {
+  color(color_panel) difference() {
     translate([-band_thick/2
                -side_wall_clearance
                -mount_panel_thickness/2, 0, 0]) {
@@ -619,11 +630,11 @@ module hollow_cylinder(r=10, axle_r=8, h=10, with_brim=false,
 
 module stack_spacer(s=stack, with_brim=false, flat=stack_spacer_print_flat) {
   total_width = stack * band_thick + 2*side_wall_clearance;
-  color("azure", 0.25) hollow_cylinder(r=axle_dia/2+stack_spacer_wall,
-                                       axle_r=axle_dia/2,
-                                       h=total_width,
-                                       with_brim=with_brim,
-                                       flat=flat);
+  color(color_stack_spacer) hollow_cylinder(r=axle_dia/2+stack_spacer_wall,
+                                            axle_r=axle_dia/2,
+                                            h=total_width,
+                                            with_brim=with_brim,
+                                            flat=flat);
 }
 
 
@@ -825,7 +836,7 @@ module motor_coupler() {
 
   // Need to render() to fix a weird artifact where the color bleeds into
   // the mated wheel.
-  color("yellow") render()
+  color(color_motor_coupler) render()
     translate([0, 0, height]) rotate([0, 180, 0]) difference() {
     cylinder(r=coupler_dia/2, h=height);
     translate([0, 0, -band_thick/2+engage_height])
@@ -836,13 +847,13 @@ module motor_coupler() {
 }
 
 // 'Bearing' on the other side of the motor. With that, we essentiall just
-// use a threaded rod mounted pretty perpendicular to the frame. And for that
-// we need a wide diameter flat 'nut'.
+// use a threaded rod mounted pretty perpendicular to the frame.
+// This provides a more perpendicular mating to the outer panel.
 module motor_opposing_bearing() {
   mount_dia=20;
   big_height=side_wall_clearance - 4;
 
-  color("red") difference() {
+  color(color_counter_bearing) difference() {
     union() {
       cylinder(r=axle_dia/2 + 2, h=side_wall_clearance-rotation_clearance);
       cylinder(r=mount_dia/2, h=big_height);
@@ -853,10 +864,11 @@ module motor_opposing_bearing() {
   }
 }
 
+// Counter-part for the bearing: a wide diameter flat 'nut'.
 module motor_opposing_bearing_nut(show_nut=false) {
   mount_dia=20;
   thick=axle_hex_thick + 3;
-  color("red") difference() {
+  color(color_counter_bearing) difference() {
     cylinder(r=mount_dia/2, h=thick);
     translate([0, 0, -e]) cylinder(r=axle_dia/2, h=thick+2*e);
     translate([0, 0, thick-axle_hex_thick]) hex_nut(axle_hex_flat_size, axle_hex_thick+e);
@@ -909,8 +921,8 @@ module knife_slider_layer(s=stack, is_top=false) {
 // warm, which might soften over time 3D printed plastic.
 module knife_slider(s=stack) {
   for (i = [0:1:knife_slide_layers-e]) {
-    color(i % 2 == 0 ? "#d8c0a3" : "#c9a77e")  // 'wood' layers
-    translate([0, 0, i*knife_slide_layer_thick])
+    color(color_wood[i % len(color_wood)])
+      translate([0, 0, i*knife_slide_layer_thick])
       knife_slider_layer(s, is_top = (i > knife_slide_layers-knife_slide_top_layers-1));
   }
 }
