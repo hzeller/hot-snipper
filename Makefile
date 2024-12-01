@@ -18,7 +18,7 @@ ALL_IMAGES=img/machine-render.png \
            img/laser_cut_knife_slider.png img/laser_cut_mount_panel.png
 
 FN=196
-OPENSCAD=openscad --backend Manifold -D\$$fn=$(FN)
+OPENSCAD=openscad --backend Manifold -D'$$fn=$(FN)'
 
 all: all-stl all-dxf
 
@@ -57,3 +57,6 @@ img/laser_cut_%.png: fab/laser_cut_%.scad
 # For 60fps, that would be at least 2100 frames.
 cut-wheel.mp4: frame00000.png   #... and more
 	ffmpeg -framerate 60 -y -i frame%05d.png $@
+
+clean:
+	rm -f $(ALL_TARGETS_STL) $(ALL_TARGETS_DXF)
