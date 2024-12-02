@@ -955,9 +955,12 @@ function camera_position(time, rot_a = 85, rot_b = -80) =
   : [ rot_a, 0, rot_b];  // Remaining time: one phase staying put.
 
 
-// For some reason, OpenSCAD only can deal with assigning things to $vpr
+// OpenSCAD only can deal with assigning things to $vpr
 // in the toplevel. So to enable/disable this, we can't wrap it in if (),
 // but need to comment it out. So remove comment when generate animation.
 $vpr = camera_position($t);
+$vpt = [0, 0, 25];
+$vpd = 650;   // TODO: this might also be fun to change during animation.
+$vpf=16;
 
 full_assembly();

@@ -1,4 +1,5 @@
-frame*.png
+anim/frame*.png
 fab/*.stl
 fab/*.dxf
+cut-wheel.mp4
 *~

@@ -6,7 +6,9 @@ pkgs.mkShell {
       openscad-lsp
 
       # CAM
-      prusa-slicer  
+      prusa-slicer
       netpbm  # image render
+      ffmpeg
+      povray
     ];
 }
