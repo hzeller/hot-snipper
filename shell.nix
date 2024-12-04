@@ -10,5 +10,8 @@ pkgs.mkShell {
       netpbm  # image render
       ffmpeg
       povray
+      linuxKernel.packages.linux_6_6.perf
+      pprof
+      perf_data_converter
     ];
 }

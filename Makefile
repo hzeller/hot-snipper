@@ -4,7 +4,7 @@
 BAND_STACK=2
 
 # Call to openscad using fast Manifold backend and defining some global settings
-# Note: needs to have https://github.com/openscad/openscad/pull/5472 applied
+# Note: needs to have https://github.com/openscad/openscad/pull/5473 applied
 FN=196
 OPENSCAD=openscad --backend Manifold -D'$$fn=$(FN)' -Dstack=$(BAND_STACK)
 
@@ -29,7 +29,6 @@ ANIM_FRAME_COUNT=2100
 
 # Utilized CPU cores in animation shardin
 CPU_CORES := 10
-LAST_SHARD=$(shell expr $(CPU_CORES) - 1)
 
 all: all-stl all-dxf
 
@@ -65,8 +64,8 @@ img/laser_cut_%.png: fab/laser_cut_%.scad
 # Create PNG or POV animation frames.
 anim/frame00000.%: band-cutter-machine.scad
 	mkdir -p anim  # TODO: possible to tell openscad output-dir without cd ?
-	cd anim ; for shard in `seq 0 $(LAST_SHARD)`; do \
-           $(OPENSCAD) --animate_sharding=$(CPU_CORES),$$shard \
+	cd anim ; for shard in `seq 1 $(CPU_CORES)`; do \
+           $(OPENSCAD) --animate_sharding=$$shard/$(CPU_CORES) \
             --animate $(ANIM_FRAME_COUNT) \
             --imgsize=1920,1080 --colorscheme=Starnight --export-format=$* -q \
             ../$< & \
