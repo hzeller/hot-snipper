@@ -6,7 +6,7 @@ BAND_STACK=2
 # Call to openscad using fast Manifold backend and defining some global settings
 # Note: needs to have https://github.com/openscad/openscad/pull/5473 applied
 FN=196
-OPENSCAD=openscad --backend Manifold -D'$$fn=$(FN)' -Dstack=$(BAND_STACK)
+OPENSCAD=/home/hzeller/src/my/OpenSCAD/build/openscad --backend Manifold -D'$$fn=$(FN)' -Dstack=$(BAND_STACK)
 
 ALL_TARGETS_STL=fab/mount_panel.stl \
      fab/wheel_stack.stl fab/support_enforder.stl \
@@ -28,7 +28,7 @@ ALL_IMAGES=img/machine-render.png \
 ANIM_FRAME_COUNT=2100
 
 # Utilized CPU cores in animation shardin
-CPU_CORES := 10
+CPU_CORES := 5
 
 all: all-stl all-dxf
 
